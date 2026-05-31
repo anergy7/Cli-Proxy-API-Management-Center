@@ -67,8 +67,7 @@ const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
 const DEFAULT_REGULAR_PAGE_SIZE = 9;
 const DEFAULT_COMPACT_PAGE_SIZE = 12;
 
-const escapeWildcardSearchSegment = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
@@ -88,6 +87,7 @@ export function AuthFilesPage() {
   const [filter, setFilter] = useState<'all' | string>('all');
   const [problemOnly, setProblemOnly] = useState(false);
   const [disabledOnly, setDisabledOnly] = useState(false);
+  const [enabledOnly, setEnabledOnly] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -202,10 +202,10 @@ export function AuthFilesPage() {
       if (typeof persisted.disabledOnly === 'boolean') {
         setDisabledOnly(persisted.disabledOnly);
       }
-      if (
-        typeof persistedCompactMode !== 'boolean' &&
-        typeof persisted.compactMode === 'boolean'
-      ) {
+      if (typeof persisted.enabledOnly === 'boolean') {
+        setEnabledOnly(persisted.enabledOnly);
+      }
+      if (typeof persistedCompactMode !== 'boolean' && typeof persisted.compactMode === 'boolean') {
         setCompactMode(persisted.compactMode);
       }
       if (typeof persisted.search === 'string') {
@@ -221,11 +221,11 @@ export function AuthFilesPage() {
       const regularPageSize =
         typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
           ? clampCardPageSize(persisted.regularPageSize)
-          : legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE);
       const compactPageSize =
         typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
           ? clampCardPageSize(persisted.compactPageSize)
-          : legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE;
+          : (legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE);
       setPageSizeByMode({
         regular: regularPageSize,
         compact: compactPageSize,
@@ -245,6 +245,7 @@ export function AuthFilesPage() {
       filter,
       problemOnly,
       disabledOnly,
+      enabledOnly,
       compactMode,
       search,
       page,
@@ -257,6 +258,7 @@ export function AuthFilesPage() {
   }, [
     compactMode,
     disabledOnly,
+    enabledOnly,
     filter,
     page,
     pageSize,
@@ -360,9 +362,10 @@ export function AuthFilesPage() {
       files.filter((file) => {
         if (problemOnly && !hasAuthFileStatusMessage(file)) return false;
         if (disabledOnly && file.disabled !== true) return false;
+        if (enabledOnly && file.disabled === true) return false;
         return true;
       }),
-    [disabledOnly, files, problemOnly]
+    [disabledOnly, enabledOnly, files, problemOnly]
   );
 
   const sortOptions = useMemo(
@@ -643,7 +646,7 @@ export function AuthFilesPage() {
   );
 
   const deleteAllButtonLabel = (() => {
-    if (disabledOnly) {
+    if (disabledOnly || enabledOnly) {
       return t('auth_files.delete_filtered_result_button');
     }
     if (problemOnly) {
@@ -688,9 +691,11 @@ export function AuthFilesPage() {
                   filter,
                   problemOnly,
                   disabledOnly,
+                  enabledOnly,
                   onResetFilterToAll: () => setFilter('all'),
                   onResetProblemOnly: () => setProblemOnly(false),
                   onResetDisabledOnly: () => setDisabledOnly(false),
+                  onResetEnabledOnly: () => setEnabledOnly(false),
                 })
               }
               disabled={disableControls || loading || deletingAll}
@@ -782,12 +787,33 @@ export function AuthFilesPage() {
                         checked={disabledOnly}
                         onChange={(value) => {
                           setDisabledOnly(value);
+                          if (value) {
+                            setEnabledOnly(false);
+                          }
                           setPage(1);
                         }}
                         ariaLabel={t('auth_files.disabled_filter_only')}
                         label={
                           <span className={styles.filterToggleLabel}>
                             {t('auth_files.disabled_filter_only')}
+                          </span>
+                        }
+                      />
+                    </div>
+                    <div className={styles.filterToggleCard}>
+                      <ToggleSwitch
+                        checked={enabledOnly}
+                        onChange={(value) => {
+                          setEnabledOnly(value);
+                          if (value) {
+                            setDisabledOnly(false);
+                          }
+                          setPage(1);
+                        }}
+                        ariaLabel={t('auth_files.enabled_filter_only')}
+                        label={
+                          <span className={styles.filterToggleLabel}>
+                            {t('auth_files.enabled_filter_only')}
                           </span>
                         }
                       />
