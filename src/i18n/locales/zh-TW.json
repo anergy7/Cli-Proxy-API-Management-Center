@@ -389,6 +389,8 @@
     "table_provider": "提供方",
     "table_credential": "憑證",
     "table_usage": "用量",
+    "table_failure_reason": "失敗原因",
+    "table_failure_no_detail": "有失敗記錄，暫無具體錯誤",
     "table_rate_limits": "限流",
     "table_actions": "操作",
     "table_state": "狀態",

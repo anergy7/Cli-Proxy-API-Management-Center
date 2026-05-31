@@ -389,6 +389,8 @@
     "table_provider": "Provider",
     "table_credential": "Credential",
     "table_usage": "Usage",
+    "table_failure_reason": "Failure reason",
+    "table_failure_no_detail": "Failures recorded, no error detail yet",
     "table_rate_limits": "Rate limits",
     "table_actions": "Actions",
     "table_state": "State",

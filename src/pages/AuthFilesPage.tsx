@@ -66,8 +66,10 @@ import {
   buildHealthSummary,
   classifyAuthFileHealth,
   formatCompactNumber,
+  getLastError,
   getRateLimit,
   getWarningCount,
+  getWarnings,
   type HealthTone,
 } from '@/features/authFiles/health';
 import { AuthFileRateLimitEditorModal } from '@/features/authFiles/components/AuthFileRateLimitEditorModal';
@@ -101,7 +103,7 @@ const DEFAULT_REGULAR_PAGE_SIZE = 20;
 const DEFAULT_COMPACT_PAGE_SIZE = 50;
 // Keep in sync with the number of <th> columns rendered in the auth-file table;
 // used as the colSpan for the expandable detail row.
-const AUTH_TABLE_COLUMN_COUNT = 12;
+const AUTH_TABLE_COLUMN_COUNT = 13;
 
 const HEALTH_TONE_CLASS: Record<HealthTone, string> = {
   neutral: styles.tableStateNeutral,
@@ -123,6 +125,42 @@ const formatRateLimitPair = (current?: number, limit?: number, compact = false):
   const safeCurrent = typeof current === 'number' && Number.isFinite(current) ? current : 0;
   const hasLimit = typeof limit === 'number' && Number.isFinite(limit) && limit > 0;
   return `${fmt(safeCurrent)}/${hasLimit ? fmt(limit) : '∞'}`;
+};
+
+const failureParts = (file: AuthFileItem): { title: string; message: string; tags: string[] }[] => {
+  const lastError = getLastError(file);
+  const warnings = getWarnings(file);
+  const items: { title: string; message: string; tags: string[] }[] = [];
+
+  if (lastError) {
+    const tags = [
+      lastError.http_status !== undefined ? `HTTP ${lastError.http_status}` : '',
+      lastError.code ?? '',
+      lastError.retryable === true ? 'retryable' : lastError.retryable === false ? 'final' : '',
+    ].filter(Boolean);
+    items.push({
+      title: 'last_error',
+      message: lastError.message || lastError.code || tags.join(' '),
+      tags,
+    });
+  }
+
+  warnings.slice(0, 2).forEach((warning) => {
+    const tags = [
+      warning.kind ?? '',
+      warning.http_status ? `HTTP ${warning.http_status}` : '',
+      warning.code ?? '',
+      warning.count && warning.count > 1 ? `x${warning.count}` : '',
+      warning.model ?? '',
+    ].filter(Boolean);
+    items.push({
+      title: warning.kind || 'warning',
+      message: warning.message || tags.join(' '),
+      tags,
+    });
+  });
+
+  return items.filter((item) => item.message || item.tags.length > 0);
 };
 
 export function AuthFilesPage() {
@@ -928,6 +966,7 @@ export function AuthFilesPage() {
                       <th>{t('auth_files.table_credential')}</th>
                       <th>{t('auth_files.table_state')}</th>
                       <th>{t('auth_files.table_usage')}</th>
+                      <th>{t('auth_files.table_failure_reason')}</th>
                       <th>{t('auth_files.table_rate_limits')}</th>
                       <th>{t('auth_files.health_status_label')}</th>
                       <th>{t('auth_files.file_created')}</th>
@@ -978,6 +1017,7 @@ export function AuthFilesPage() {
                       const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
                       const numberID = getAuthFileNumberID(file);
                       const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
+                      const failures = failureParts(file);
                       const selected = selectedFiles.has(file.name);
                       const expanded = expandedRows.has(file.name);
 
@@ -1097,6 +1137,44 @@ export function AuthFilesPage() {
                                   {t('stats.failure')} {fileStats.failure}
                                 </span>
                               </div>
+                            </td>
+                            <td className={styles.tableFailureCell}>
+                              {failures.length > 0 ? (
+                                <button
+                                  type="button"
+                                  className={styles.tableFailureButton}
+                                  onClick={() => toggleExpand(file.name)}
+                                  title={failures
+                                    .map((item) =>
+                                      [item.title, item.tags.join(' '), item.message]
+                                        .filter(Boolean)
+                                        .join(' · ')
+                                    )
+                                    .join('\n')}
+                                >
+                                  <span className={styles.tableFailureTags}>
+                                    {failures[0].tags.slice(0, 2).map((tag) => (
+                                      <span key={tag} className={styles.tableFailureTag}>
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </span>
+                                  <span className={styles.tableFailureText}>
+                                    {failures[0].message}
+                                  </span>
+                                  {failures.length > 1 && (
+                                    <span className={styles.tableFailureMore}>
+                                      +{failures.length - 1}
+                                    </span>
+                                  )}
+                                </button>
+                              ) : fileStats.failure > 0 ? (
+                                <span className={styles.tableMuted}>
+                                  {t('auth_files.table_failure_no_detail')}
+                                </span>
+                              ) : (
+                                <span className={styles.tableMuted}>-</span>
+                              )}
                             </td>
                             <td className={styles.tableRateLimitCell}>
                               <div className={styles.tableRateLimit}>

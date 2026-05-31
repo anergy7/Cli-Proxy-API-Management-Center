@@ -386,6 +386,8 @@
     "table_provider": "Провайдер",
     "table_credential": "Учётные данные",
     "table_usage": "Использование",
+    "table_failure_reason": "Причина сбоя",
+    "table_failure_no_detail": "Есть сбои, подробностей пока нет",
     "table_rate_limits": "Лимиты",
     "table_actions": "Действия",
     "table_state": "Состояние",
