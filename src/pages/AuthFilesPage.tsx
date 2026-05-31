@@ -50,7 +50,9 @@ import {
   MIN_CARD_PAGE_SIZE,
   clampCardPageSize,
   formatCreated,
+  formatCreatedCompact,
   formatModified,
+  formatModifiedCompact,
   getAuthFileNumberID,
   getAuthFileIcon,
   getTypeColor,
@@ -555,7 +557,7 @@ export function AuthFilesPage() {
       copy.sort((a, b) => {
         const pa = parsePriorityValue(a.priority ?? a['priority']) ?? 0;
         const pb = parsePriorityValue(b.priority ?? b['priority']) ?? 0;
-        return pb - pa; // 高优先级排前面
+        return pb - pa; // Higher priority first.
       });
     }
     return copy;
@@ -1049,6 +1051,8 @@ export function AuthFilesPage() {
                       const proxyHost = formatProxyHost(proxyURL);
                       const selected = selectedFiles.has(file.name);
                       const expanded = expandedRows.has(file.name);
+                      const createdLabel = formatCreated(file);
+                      const modifiedLabel = formatModified(file);
 
                       return (
                         <Fragment key={file.name}>
@@ -1079,10 +1083,12 @@ export function AuthFilesPage() {
                             <td className={styles.tableNumberCell}>
                               {numberID ? `#${numberID}` : '-'}
                             </td>
-                            <td>
+                            <td className={styles.tableProviderCell}>
                               <div className={styles.tableProvider}>
                                 <span
                                   className={styles.tableProviderIcon}
+                                  title={typeLabel}
+                                  aria-label={typeLabel}
                                   style={{
                                     backgroundColor: typeColor.bg,
                                     color: typeColor.text,
@@ -1092,18 +1098,8 @@ export function AuthFilesPage() {
                                   {providerIcon ? (
                                     <img src={providerIcon} alt="" />
                                   ) : (
-                                    typeLabel.slice(0, 1).toUpperCase()
+                                    typeLabel.slice(0, 2).toUpperCase()
                                   )}
-                                </span>
-                                <span
-                                  className={styles.tableTypeBadge}
-                                  style={{
-                                    backgroundColor: typeColor.bg,
-                                    color: typeColor.text,
-                                    ...(typeColor.border ? { border: typeColor.border } : {}),
-                                  }}
-                                >
-                                  {typeLabel}
                                 </span>
                               </div>
                             </td>
@@ -1271,8 +1267,12 @@ export function AuthFilesPage() {
                             <td className={styles.tableHealthCell}>
                               <ProviderStatusBar statusData={statusData} styles={styles} />
                             </td>
-                            <td className={styles.tableDateCell}>{formatCreated(file)}</td>
-                            <td className={styles.tableDateCell}>{formatModified(file)}</td>
+                            <td className={styles.tableDateCell} title={createdLabel}>
+                              {formatCreatedCompact(file)}
+                            </td>
+                            <td className={styles.tableDateCell} title={modifiedLabel}>
+                              {formatModifiedCompact(file)}
+                            </td>
                             <td className={styles.tablePriorityCell}>
                               {priorityValue !== undefined ? priorityValue : '-'}
                             </td>
