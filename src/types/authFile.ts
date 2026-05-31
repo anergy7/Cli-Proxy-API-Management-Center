@@ -25,6 +25,7 @@ export interface AuthFileItem {
   type?: AuthFileType | string;
   provider?: string;
   size?: number;
+  numberId?: string | number | null;
   authIndex?: string | number | null;
   runtimeOnly?: boolean | string;
   disabled?: boolean;

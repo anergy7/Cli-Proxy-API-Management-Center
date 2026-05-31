@@ -29,6 +29,7 @@ import {
   MIN_CARD_PAGE_SIZE,
   QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
+  getAuthFileNumberID,
   getAuthFileIcon,
   getTypeColor,
   getTypeLabel,
@@ -371,6 +372,7 @@ export function AuthFilesPage() {
   const sortOptions = useMemo(
     () => [
       { value: 'default', label: t('auth_files.sort_default') },
+      { value: 'number_id', label: t('auth_files.sort_number_id') },
       { value: 'az', label: t('auth_files.sort_az') },
       { value: 'priority', label: t('auth_files.sort_priority') },
     ],
@@ -398,7 +400,7 @@ export function AuthFilesPage() {
       const matchType = normalizedFilter === 'all' || type === normalizedFilter;
       const matchSearch =
         !normalizedSearch ||
-        [item.name, item.type, item.provider].some((value) => {
+        [item.name, item.type, item.provider, getAuthFileNumberID(item)].some((value) => {
           const content = (value || '').toString();
           return wildcardSearch
             ? wildcardSearch.test(content)
@@ -420,6 +422,13 @@ export function AuthFilesPage() {
       });
     } else if (sortMode === 'az') {
       copy.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortMode === 'number_id') {
+      copy.sort((a, b) => {
+        const numberA = getAuthFileNumberID(a) ?? Number.MAX_SAFE_INTEGER;
+        const numberB = getAuthFileNumberID(b) ?? Number.MAX_SAFE_INTEGER;
+        if (numberA !== numberB) return numberA - numberB;
+        return a.name.localeCompare(b.name);
+      });
     } else if (sortMode === 'priority') {
       copy.sort((a, b) => {
         const pa = parsePriorityValue(a.priority ?? a['priority']) ?? 0;

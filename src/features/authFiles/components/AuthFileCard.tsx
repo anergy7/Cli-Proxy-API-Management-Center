@@ -24,6 +24,7 @@ import {
   QUOTA_PROVIDER_TYPES,
   formatCreated,
   formatModified,
+  getAuthFileNumberID,
   getAuthFileIcon,
   getAuthFileStatusMessage,
   getTypeColor,
@@ -127,6 +128,7 @@ export function AuthFileCard(props: AuthFileCardProps) {
     Boolean(rawStatusMessage) && !HEALTHY_STATUS_MESSAGES.has(rawStatusMessage.toLowerCase());
 
   const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
+  const numberID = getAuthFileNumberID(file);
   const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
   const stateLabel = isRuntimeOnly
     ? t('auth_files.type_virtual') || '虚拟认证文件'
@@ -206,6 +208,12 @@ export function AuthFileCard(props: AuthFileCardProps) {
           </div>
 
           <div className={`${styles.cardMeta} ${compact ? styles.cardMetaCompact : ''}`}>
+            <div className={`${styles.metaItem} ${styles.numberBadge}`}>
+              <span className={styles.metaLabel}>{t('auth_files.number_id')}</span>
+              <span className={`${styles.metaValue} ${styles.numberValue}`}>
+                {numberID ? `#${numberID}` : '-'}
+              </span>
+            </div>
             <div className={styles.metaItem}>
               <span className={styles.metaLabel}>{t('auth_files.file_size')}</span>
               <span className={styles.metaValue}>

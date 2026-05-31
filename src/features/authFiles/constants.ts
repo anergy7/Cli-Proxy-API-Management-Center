@@ -257,6 +257,14 @@ export const formatCreated = (item: AuthFileItem): string =>
 export const formatModified = (item: AuthFileItem): string =>
   formatAuthFileDate(item['modtime'] ?? item.modified ?? item['updated_at']);
 
+export const getAuthFileNumberID = (item: AuthFileItem): number | undefined => {
+  const raw = item['number_id'] ?? item.numberId;
+  if (raw === null || raw === undefined || raw === '') return undefined;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) return undefined;
+  return Math.trunc(value);
+};
+
 // 检查模型是否被 OAuth 排除
 export const isModelExcluded = (
   modelId: string,

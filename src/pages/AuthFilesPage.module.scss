@@ -1033,6 +1033,15 @@
   min-width: 0;
 }
 
+.numberBadge {
+  min-width: 0;
+}
+
+.numberValue {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
 .priorityValue {
   font-variant-numeric: tabular-nums;
 }
