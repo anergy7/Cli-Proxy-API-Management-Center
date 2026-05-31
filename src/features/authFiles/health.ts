@@ -79,10 +79,12 @@ export function getRateLimit(file: AuthFileItem): AuthFileRateLimit | null {
     tpm_limit: asFiniteNumber(raw.tpm_limit),
     concurrency_limit: asFiniteNumber(raw.concurrency_limit),
     rph_limit: asFiniteNumber(raw.rph_limit),
+    hourly_limit: asFiniteNumber(raw.hourly_limit),
     rpm_30m_limit: asFiniteNumber(raw.rpm_30m_limit),
     rpm_current: asFiniteNumber(raw.rpm_current),
     tpm_current: asFiniteNumber(raw.tpm_current),
     rph_current: asFiniteNumber(raw.rph_current),
+    hourly_current: asFiniteNumber(raw.hourly_current),
     rpm_30m_current: asFiniteNumber(raw.rpm_30m_current),
     in_flight: asFiniteNumber(raw.in_flight),
   };
@@ -122,6 +124,7 @@ export function isRateLimited(rl: AuthFileRateLimit | null): boolean {
     overLimit(rl.rpm_current, rl.rpm_limit) ||
     overLimit(rl.tpm_current, rl.tpm_limit) ||
     overLimit(rl.rph_current, rl.rph_limit) ||
+    overLimit(rl.hourly_current, rl.hourly_limit) ||
     overLimit(rl.rpm_30m_current, rl.rpm_30m_limit) ||
     overLimit(rl.in_flight, rl.concurrency_limit)
   );
@@ -134,10 +137,12 @@ export function hasRateLimitData(rl: AuthFileRateLimit | null): boolean {
     rl.tpm_limit,
     rl.concurrency_limit,
     rl.rph_limit,
+    rl.hourly_limit,
     rl.rpm_30m_limit,
     rl.rpm_current,
     rl.tpm_current,
     rl.rph_current,
+    rl.hourly_current,
     rl.rpm_30m_current,
     rl.in_flight,
   ].some((value) => typeof value === 'number' && value > 0);

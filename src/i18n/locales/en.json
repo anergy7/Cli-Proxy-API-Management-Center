@@ -356,6 +356,7 @@
     "concurrency_limit_label": "Concurrency Limit (concurrency_limit)",
     "rpm_30m_limit_label": "30-minute Request Limit (rpm_30m_limit)",
     "rph_limit_label": "Hourly Request Limit (rph_limit)",
+    "hourly_limit_label": "Clock-hour Request Limit (hourly_limit)",
     "rate_limit_hint": "Leave empty or set 0 to use the global default.",
     "rate_limit_editor_title": "Edit rate limits - {{name}}",
     "rate_limit_editor_title_empty": "Edit rate limits",
@@ -416,6 +417,7 @@
     "rate_tpm": "TPM",
     "rate_rpm_30m": "30m",
     "rate_rph": "RPH",
+    "rate_hourly": "Clock hour",
     "rate_concurrency": "Concurrency",
     "rate_unlimited": "∞"
   },
@@ -968,6 +970,7 @@
           "concurrency_limit_default": "Default Concurrency Limit",
           "rpm_30m_limit_default": "Default 30-minute Request Limit",
           "rph_limit_default": "Default Hourly Request Limit",
+          "hourly_limit_default": "Default Clock-hour Request Limit",
           "rate_limit_hint": "0 means unlimited; auth-file metadata can override it.",
           "auth_auto_refresh_workers": "Auth Auto-refresh Workers",
           "auth_auto_refresh_workers_hint": "When greater than 0, overrides the default worker count (16)",
@@ -1115,7 +1118,15 @@
     "refresh_files": "Refresh auth files",
     "refresh_files_and_quota": "Refresh files & quota",
     "refresh_all_credentials": "Refresh all credentials",
-    "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data."
+    "card_idle_hint": "Use the top \"Refresh all credentials\" button to fetch the latest quota data.",
+    "filter_all": "All",
+    "filter_enabled": "Enabled",
+    "filter_disabled": "Disabled",
+    "table_provider": "Provider",
+    "table_credential": "Credential",
+    "table_enabled": "Enabled",
+    "table_quota": "Quota",
+    "table_actions": "Actions"
   },
   "system_info": {
     "title": "Management Center Info",

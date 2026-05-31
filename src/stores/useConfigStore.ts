@@ -43,6 +43,7 @@ const SECTION_KEYS: RawConfigSection[] = [
   'tpm-limit-default',
   'concurrency-limit-default',
   'rph-limit-default',
+  'hourly-limit-default',
   'rpm-30m-limit-default',
   'quota-exceeded',
   'request-log',
@@ -82,6 +83,8 @@ const extractSectionValue = (config: Config | null, section?: RawConfigSection) 
       return config.concurrencyLimitDefault;
     case 'rph-limit-default':
       return config.rphLimitDefault;
+    case 'hourly-limit-default':
+      return config.hourlyLimitDefault;
     case 'rpm-30m-limit-default':
       return config.rpm30mLimitDefault;
     case 'quota-exceeded':
@@ -238,6 +241,9 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
           break;
         case 'rph-limit-default':
           nextConfig.rphLimitDefault = value as Config['rphLimitDefault'];
+          break;
+        case 'hourly-limit-default':
+          nextConfig.hourlyLimitDefault = value as Config['hourlyLimitDefault'];
           break;
         case 'rpm-30m-limit-default':
           nextConfig.rpm30mLimitDefault = value as Config['rpm30mLimitDefault'];

@@ -1202,6 +1202,13 @@ export function AuthFilesPage() {
                                     )}
                                   </span>
                                   <span>
+                                    {t('auth_files.rate_hourly')}{' '}
+                                    {formatRateLimitPair(
+                                      rateLimit?.hourly_current,
+                                      rateLimit?.hourly_limit
+                                    )}
+                                  </span>
+                                  <span>
                                     {t('auth_files.rate_concurrency')}{' '}
                                     {formatRateLimitPair(
                                       rateLimit?.in_flight,

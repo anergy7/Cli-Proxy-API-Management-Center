@@ -182,6 +182,14 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     disabled={disableControls || editor.saving || !editor.json}
                     onChange={(e) => onChange('rphLimit', e.target.value)}
                   />
+                  <Input
+                    label={t('auth_files.hourly_limit_label')}
+                    value={editor.hourlyLimit}
+                    placeholder="15"
+                    hint={t('auth_files.rate_limit_hint')}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('hourlyLimit', e.target.value)}
+                  />
                   {editor.providerKey === 'codex' && (
                     <div className="form-group">
                       <label>{t('auth_files.codex_websockets_label')}</label>

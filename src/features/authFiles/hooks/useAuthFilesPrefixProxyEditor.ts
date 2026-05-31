@@ -28,6 +28,7 @@ export type PrefixProxyEditorField =
   | 'concurrencyLimit'
   | 'rpm30mLimit'
   | 'rphLimit'
+  | 'hourlyLimit'
   | 'websockets'
   | 'note'
   | 'headersText';
@@ -53,6 +54,7 @@ export type PrefixProxyEditorState = {
   concurrencyLimit: string;
   rpm30mLimit: string;
   rphLimit: string;
+  hourlyLimit: string;
   websockets: boolean;
   websocketsTouched: boolean;
   note: string;
@@ -126,7 +128,13 @@ const parseRateLimitValue = (value: unknown): number | undefined => {
 const addRateLimitPatch = (
   patch: AuthFileFieldsPatch,
   original: Record<string, unknown>,
-  key: 'rpm_limit' | 'tpm_limit' | 'concurrency_limit' | 'rph_limit' | 'rpm_30m_limit',
+  key:
+    | 'rpm_limit'
+    | 'tpm_limit'
+    | 'concurrency_limit'
+    | 'rph_limit'
+    | 'hourly_limit'
+    | 'rpm_30m_limit',
   text: string
 ) => {
   const originalLimit = parseRateLimitValue(original[key]);
@@ -296,6 +304,7 @@ const buildAuthFileFieldsPatch = (
   addRateLimitPatch(patch, original, 'concurrency_limit', editor.concurrencyLimit);
   addRateLimitPatch(patch, original, 'rpm_30m_limit', editor.rpm30mLimit);
   addRateLimitPatch(patch, original, 'rph_limit', editor.rphLimit);
+  addRateLimitPatch(patch, original, 'hourly_limit', editor.hourlyLimit);
 
   if (editor.noteTouched) {
     const originalNote = normalizeTextField(original.note);
@@ -368,17 +377,24 @@ const buildPrefixProxyUpdatedText = (
     }
   }
 
-  (['rpm_limit', 'tpm_limit', 'concurrency_limit', 'rpm_30m_limit', 'rph_limit'] as const).forEach(
-    (key) => {
-      const value = patch[key];
-      if (value === undefined) return;
-      if (value <= 0) {
-        delete next[key];
-        return;
-      }
-      next[key] = value;
+  (
+    [
+      'rpm_limit',
+      'tpm_limit',
+      'concurrency_limit',
+      'rpm_30m_limit',
+      'rph_limit',
+      'hourly_limit',
+    ] as const
+  ).forEach((key) => {
+    const value = patch[key];
+    if (value === undefined) return;
+    if (value <= 0) {
+      delete next[key];
+      return;
     }
-  );
+    next[key] = value;
+  });
 
   applyHeadersPatch(next, patch.headers);
 
@@ -446,6 +462,7 @@ export function useAuthFilesPrefixProxyEditor(
       concurrencyLimit: '',
       rpm30mLimit: '',
       rphLimit: '',
+      hourlyLimit: '',
       websockets: false,
       websocketsTouched: false,
       note: '',
@@ -497,6 +514,7 @@ export function useAuthFilesPrefixProxyEditor(
       const concurrencyLimit = parseRateLimitValue(json.concurrency_limit);
       const rpm30mLimit = parseRateLimitValue(json.rpm_30m_limit);
       const rphLimit = parseRateLimitValue(json.rph_limit);
+      const hourlyLimit = parseRateLimitValue(json.hourly_limit);
       const websockets = providerKey === 'codex' ? readCodexAuthFileWebsockets(json) : false;
       const note = typeof json.note === 'string' ? json.note : '';
       const headers = json.headers;
@@ -527,6 +545,7 @@ export function useAuthFilesPrefixProxyEditor(
             concurrencyLimit !== undefined && concurrencyLimit > 0 ? String(concurrencyLimit) : '',
           rpm30mLimit: rpm30mLimit !== undefined && rpm30mLimit > 0 ? String(rpm30mLimit) : '',
           rphLimit: rphLimit !== undefined && rphLimit > 0 ? String(rphLimit) : '',
+          hourlyLimit: hourlyLimit !== undefined && hourlyLimit > 0 ? String(hourlyLimit) : '',
           websockets,
           websocketsTouched: false,
           note,
@@ -561,6 +580,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'concurrencyLimit') return { ...prev, concurrencyLimit: String(value) };
       if (field === 'rpm30mLimit') return { ...prev, rpm30mLimit: String(value) };
       if (field === 'rphLimit') return { ...prev, rphLimit: String(value) };
+      if (field === 'hourlyLimit') return { ...prev, hourlyLimit: String(value) };
       if (field === 'websockets') {
         return { ...prev, websockets: Boolean(value), websocketsTouched: true };
       }

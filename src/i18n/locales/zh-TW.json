@@ -356,6 +356,7 @@
     "concurrency_limit_label": "並發限制（concurrency_limit）",
     "rpm_30m_limit_label": "30 分鐘請求限制（rpm_30m_limit）",
     "rph_limit_label": "每小時請求限制（rph_limit）",
+    "hourly_limit_label": "整點小時請求限制（hourly_limit）",
     "rate_limit_hint": "留空或 0 表示使用全域預設值。",
     "rate_limit_editor_title": "編輯限流 - {{name}}",
     "rate_limit_editor_title_empty": "編輯限流",
@@ -416,6 +417,7 @@
     "rate_tpm": "TPM",
     "rate_rpm_30m": "30 分鐘",
     "rate_rph": "RPH",
+    "rate_hourly": "整點小時",
     "rate_concurrency": "並發",
     "rate_unlimited": "∞"
   },
@@ -994,6 +996,7 @@
           "concurrency_limit_default": "並發預設限制",
           "rpm_30m_limit_default": "30 分鐘請求預設限制",
           "rph_limit_default": "每小時請求預設限制",
+          "hourly_limit_default": "整點小時請求預設限制",
           "rate_limit_hint": "0 表示不限制；驗證檔 metadata 可覆蓋同名設定。",
           "auth_auto_refresh_workers": "驗證自動刷新 Worker 數",
           "auth_auto_refresh_workers_hint": "大於 0 時覆蓋預設 Worker 數（16）",
@@ -1141,7 +1144,15 @@
     "refresh_files": "重新整理驗證檔案",
     "refresh_files_and_quota": "重新整理驗證檔案&配額",
     "refresh_all_credentials": "重新整理全部憑證",
-    "card_idle_hint": "請使用頂部「重新整理全部憑證」按鈕取得最新配額。"
+    "card_idle_hint": "請使用頂部「重新整理全部憑證」按鈕取得最新配額。",
+    "filter_all": "全部",
+    "filter_enabled": "啟用",
+    "filter_disabled": "停用",
+    "table_provider": "提供方",
+    "table_credential": "憑證",
+    "table_enabled": "啟用狀態",
+    "table_quota": "配額",
+    "table_actions": "操作"
   },
   "system_info": {
     "title": "管理中心資訊",

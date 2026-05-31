@@ -26,6 +26,52 @@
   margin: 0;
 }
 
+.quotaFilterBar {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  width: fit-content;
+  padding: 3px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+
+  @include mobile {
+    width: 100%;
+  }
+}
+
+.quotaFilterButton:global(.btn.btn-sm) {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    border-color: transparent;
+    background: color-mix(in srgb, var(--bg-hover) 72%, transparent);
+    color: var(--text-primary);
+  }
+
+  @include mobile {
+    flex: 1 1 0;
+  }
+}
+
+.quotaFilterButtonActive:global(.btn.btn-sm) {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--primary-contrast, #fff);
+
+  &:hover:not(:disabled) {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: var(--primary-contrast, #fff);
+  }
+}
+
 .headerActions {
   display: flex;
   gap: $spacing-sm;
@@ -408,6 +454,124 @@
   border: 1px solid var(--warning-border);
   border-radius: $radius-sm;
   padding: $spacing-xs $spacing-sm;
+}
+
+.quotaTableWrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.quotaTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th,
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    white-space: nowrap;
+  }
+
+  tbody tr:hover {
+    background: var(--bg-hover);
+  }
+
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 140px;
+  }
+
+  th:nth-child(3),
+  td:nth-child(3) {
+    width: 110px;
+  }
+
+  th:nth-child(5),
+  td:nth-child(5) {
+    width: 110px;
+  }
+
+  @include mobile {
+    min-width: 760px;
+  }
+}
+
+.quotaTableRowDisabled {
+  opacity: 0.72;
+}
+
+.quotaTypeBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quotaCredentialCell {
+  display: flex;
+  min-width: 0;
+}
+
+.quotaCredentialName {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.quotaStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quotaStatusEnabled {
+  background: rgba($success-color, 0.12);
+  color: var(--success-color);
+}
+
+.quotaStatusDisabled {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+}
+
+.quotaResultCell {
+  .quotaSection {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .quotaMessage {
+    text-align: left;
+    padding: 0;
+  }
+}
+
+.quotaActionsCell {
+  white-space: nowrap;
 }
 
 .codexPlan {

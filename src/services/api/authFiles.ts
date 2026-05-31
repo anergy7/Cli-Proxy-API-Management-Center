@@ -19,6 +19,7 @@ export type AuthFileFieldsPatch = {
   tpm_limit?: number;
   concurrency_limit?: number;
   rph_limit?: number;
+  hourly_limit?: number;
   rpm_30m_limit?: number;
   websockets?: boolean;
   note?: string;

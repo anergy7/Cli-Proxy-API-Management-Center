@@ -122,6 +122,12 @@ export function AuthFileDetailPanel({ file }: AuthFileDetailPanelProps) {
           limit: rateLimit.rph_limit,
         },
         {
+          key: 'hourly',
+          label: t('auth_files.rate_hourly'),
+          current: rateLimit.hourly_current,
+          limit: rateLimit.hourly_limit,
+        },
+        {
           key: 'concurrency',
           label: t('auth_files.rate_concurrency'),
           current: rateLimit.in_flight,

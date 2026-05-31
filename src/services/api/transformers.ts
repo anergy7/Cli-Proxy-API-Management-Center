@@ -439,6 +439,12 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   if (rphLimitDefaultValue !== undefined) {
     config.rphLimitDefault = rphLimitDefaultValue;
   }
+  const hourlyLimitDefaultValue = normalizeNumber(
+    raw['hourly-limit-default'] ?? raw.hourlyLimitDefault
+  );
+  if (hourlyLimitDefaultValue !== undefined) {
+    config.hourlyLimitDefault = hourlyLimitDefaultValue;
+  }
   const rpm30mLimitDefaultValue = normalizeNumber(
     raw['rpm-30m-limit-default'] ?? raw.rpm30mLimitDefault
   );

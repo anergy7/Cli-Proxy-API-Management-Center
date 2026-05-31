@@ -17,6 +17,7 @@ export type VisualConfigFieldPath =
   | 'tpmLimitDefault'
   | 'concurrencyLimitDefault'
   | 'rphLimitDefault'
+  | 'hourlyLimitDefault'
   | 'rpm30mLimitDefault'
   | 'authAutoRefreshWorkers'
   | 'streaming.keepaliveSeconds'
@@ -102,6 +103,7 @@ export type VisualConfigValues = {
   tpmLimitDefault: string;
   concurrencyLimitDefault: string;
   rphLimitDefault: string;
+  hourlyLimitDefault: string;
   rpm30mLimitDefault: string;
   disableCooling: boolean;
   disableImageGeneration: DisableImageGenerationMode;
@@ -168,6 +170,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   tpmLimitDefault: '',
   concurrencyLimitDefault: '',
   rphLimitDefault: '',
+  hourlyLimitDefault: '',
   rpm30mLimitDefault: '',
   disableCooling: false,
   disableImageGeneration: 'false',

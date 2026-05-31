@@ -22,6 +22,7 @@ export interface Config {
   tpmLimitDefault?: number;
   concurrencyLimitDefault?: number;
   rphLimitDefault?: number;
+  hourlyLimitDefault?: number;
   rpm30mLimitDefault?: number;
   quotaExceeded?: QuotaExceededConfig;
   requestLog?: boolean;
@@ -51,6 +52,7 @@ export type RawConfigSection =
   | 'tpm-limit-default'
   | 'concurrency-limit-default'
   | 'rph-limit-default'
+  | 'hourly-limit-default'
   | 'rpm-30m-limit-default'
   | 'quota-exceeded'
   | 'request-log'
