@@ -439,6 +439,12 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   if (rphLimitDefaultValue !== undefined) {
     config.rphLimitDefault = rphLimitDefaultValue;
   }
+  const rpm30mLimitDefaultValue = normalizeNumber(
+    raw['rpm-30m-limit-default'] ?? raw.rpm30mLimitDefault
+  );
+  if (rpm30mLimitDefaultValue !== undefined) {
+    config.rpm30mLimitDefault = rpm30mLimitDefaultValue;
+  }
 
   const quota = raw['quota-exceeded'] ?? raw.quotaExceeded;
   if (isRecord(quota)) {

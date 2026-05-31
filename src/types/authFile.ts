@@ -42,9 +42,11 @@ export interface AuthFileRateLimit {
   tpm_limit?: number;
   concurrency_limit?: number;
   rph_limit?: number;
+  rpm_30m_limit?: number;
   rpm_current?: number;
   tpm_current?: number;
   rph_current?: number;
+  rpm_30m_current?: number;
   in_flight?: number;
 }
 

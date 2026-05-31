@@ -72,6 +72,8 @@ export const configApi = {
    */
   updateRPHLimitDefault: (value: number) => apiClient.put('/rph-limit-default', { value }),
 
+  updateRPM30MLimitDefault: (value: number) => apiClient.put('/rpm-30m-limit-default', { value }),
+
   /**
    * 配额回退：切换项目
    */

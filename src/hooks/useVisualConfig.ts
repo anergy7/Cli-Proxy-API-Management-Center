@@ -189,6 +189,7 @@ export function getVisualConfigValidationErrors(
     tpmLimitDefault: getNonNegativeIntegerError(values.tpmLimitDefault),
     concurrencyLimitDefault: getNonNegativeIntegerError(values.concurrencyLimitDefault),
     rphLimitDefault: getNonNegativeIntegerError(values.rphLimitDefault),
+    rpm30mLimitDefault: getNonNegativeIntegerError(values.rpm30mLimitDefault),
     authAutoRefreshWorkers: getNonNegativeIntegerError(values.authAutoRefreshWorkers),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
@@ -842,6 +843,12 @@ function getNextDirtyFields(
   if (Object.prototype.hasOwnProperty.call(patch, 'rphLimitDefault')) {
     updateDirty('rphLimitDefault', nextValues.rphLimitDefault === baselineValues.rphLimitDefault);
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rpm30mLimitDefault')) {
+    updateDirty(
+      'rpm30mLimitDefault',
+      nextValues.rpm30mLimitDefault === baselineValues.rpm30mLimitDefault
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'wsAuth')) {
     updateDirty('wsAuth', nextValues.wsAuth === baselineValues.wsAuth);
   }
@@ -1063,6 +1070,7 @@ export function useVisualConfig() {
         tpmLimitDefault: String(parsed['tpm-limit-default'] ?? ''),
         concurrencyLimitDefault: String(parsed['concurrency-limit-default'] ?? ''),
         rphLimitDefault: String(parsed['rph-limit-default'] ?? ''),
+        rpm30mLimitDefault: String(parsed['rpm-30m-limit-default'] ?? ''),
         disableCooling: Boolean(parsed['disable-cooling']),
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
         authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
@@ -1230,6 +1238,7 @@ export function useVisualConfig() {
         setIntFromStringInDoc(doc, ['tpm-limit-default'], values.tpmLimitDefault);
         setIntFromStringInDoc(doc, ['concurrency-limit-default'], values.concurrencyLimitDefault);
         setIntFromStringInDoc(doc, ['rph-limit-default'], values.rphLimitDefault);
+        setIntFromStringInDoc(doc, ['rpm-30m-limit-default'], values.rpm30mLimitDefault);
         setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);
         setDisableImageGenerationInDoc(
           doc,

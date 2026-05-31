@@ -29,6 +29,7 @@ import {
   IconFilterAll,
   IconInfo,
   IconModelCluster,
+  IconPencil,
   IconSearch,
   IconSettings,
   IconTrash2,
@@ -64,9 +65,12 @@ import {
   HEALTH_LEVEL_I18N_KEY,
   buildHealthSummary,
   classifyAuthFileHealth,
+  formatCompactNumber,
+  getRateLimit,
   getWarningCount,
   type HealthTone,
 } from '@/features/authFiles/health';
+import { AuthFileRateLimitEditorModal } from '@/features/authFiles/components/AuthFileRateLimitEditorModal';
 import { AuthFileDetailPanel } from '@/features/authFiles/components/AuthFileDetailPanel';
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
@@ -86,6 +90,7 @@ import {
   type AuthFilesSortMode,
 } from '@/features/authFiles/uiState';
 import { useAuthStore, useNotificationStore, useThemeStore } from '@/stores';
+import type { AuthFileItem } from '@/types';
 import styles from './AuthFilesPage.module.scss';
 
 const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
@@ -96,7 +101,7 @@ const DEFAULT_REGULAR_PAGE_SIZE = 20;
 const DEFAULT_COMPACT_PAGE_SIZE = 50;
 // Keep in sync with the number of <th> columns rendered in the auth-file table;
 // used as the colSpan for the expandable detail row.
-const AUTH_TABLE_COLUMN_COUNT = 11;
+const AUTH_TABLE_COLUMN_COUNT = 12;
 
 const HEALTH_TONE_CLASS: Record<HealthTone, string> = {
   neutral: styles.tableStateNeutral,
@@ -111,6 +116,13 @@ const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
   const pattern = value.split('*').map(escapeWildcardSearchSegment).join('.*');
   return new RegExp(pattern, 'i');
+};
+
+const formatRateLimitPair = (current?: number, limit?: number, compact = false): string => {
+  const fmt = compact ? formatCompactNumber : (value: number) => String(Math.round(value));
+  const safeCurrent = typeof current === 'number' && Number.isFinite(current) ? current : 0;
+  const hasLimit = typeof limit === 'number' && Number.isFinite(limit) && limit > 0;
+  return `${fmt(safeCurrent)}/${hasLimit ? fmt(limit) : '∞'}`;
 };
 
 export function AuthFilesPage() {
@@ -137,6 +149,7 @@ export function AuthFilesPage() {
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+  const [rateLimitEditorFile, setRateLimitEditorFile] = useState<AuthFileItem | null>(null);
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
@@ -904,17 +917,18 @@ export function AuthFilesPage() {
               />
             ) : (
               <div className={styles.authTableWrap}>
-                <table className={`${styles.authTable} ${compactMode ? styles.authTableCompact : ''}`}>
+                <table
+                  className={`${styles.authTable} ${compactMode ? styles.authTableCompact : ''}`}
+                >
                   <thead>
                     <tr>
-                      <th className={styles.authTableSelectCol}>
-                        {t('auth_files.table_select')}
-                      </th>
+                      <th className={styles.authTableSelectCol}>{t('auth_files.table_select')}</th>
                       <th>{t('auth_files.number_id')}</th>
                       <th>{t('auth_files.table_provider')}</th>
                       <th>{t('auth_files.table_credential')}</th>
                       <th>{t('auth_files.table_state')}</th>
                       <th>{t('auth_files.table_usage')}</th>
+                      <th>{t('auth_files.table_rate_limits')}</th>
                       <th>{t('auth_files.health_status_label')}</th>
                       <th>{t('auth_files.file_created')}</th>
                       <th>{t('auth_files.file_modified')}</th>
@@ -933,6 +947,7 @@ export function AuthFilesPage() {
                         success: normalizeUsageTotal(file.success),
                         failure: normalizeUsageTotal(file.failed),
                       };
+                      const rateLimit = getRateLimit(file);
                       const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
                       const providerKey = normalizeProviderKey(
                         String(file.type ?? file.provider ?? 'unknown')
@@ -968,193 +983,246 @@ export function AuthFilesPage() {
 
                       return (
                         <Fragment key={file.name}>
-                        <tr
-                          className={`${selected ? styles.authTableRowSelected : ''} ${file.disabled ? styles.authTableRowDisabled : ''} ${expanded ? styles.authTableRowExpanded : ''}`}
-                        >
-                          <td className={styles.authTableSelectCol}>
-                            {!isRuntimeOnly ? (
-                              <SelectionCheckbox
-                                checked={selected}
-                                onChange={() => toggleSelect(file.name)}
-                                className={styles.tableSelection}
-                                aria-label={
-                                  selected
-                                    ? t('auth_files.batch_deselect')
-                                    : t('auth_files.batch_select_all')
-                                }
-                                title={
-                                  selected
-                                    ? t('auth_files.batch_deselect')
-                                    : t('auth_files.batch_select_all')
-                                }
-                              />
-                            ) : (
-                              <span className={styles.tableMuted}>-</span>
-                            )}
-                          </td>
-                          <td className={styles.tableNumberCell}>
-                            {numberID ? `#${numberID}` : '-'}
-                          </td>
-                          <td>
-                            <div className={styles.tableProvider}>
-                              <span
-                                className={styles.tableProviderIcon}
-                                style={{
-                                  backgroundColor: typeColor.bg,
-                                  color: typeColor.text,
-                                  ...(typeColor.border ? { border: typeColor.border } : {}),
-                                }}
-                              >
-                                {providerIcon ? (
-                                  <img src={providerIcon} alt="" />
-                                ) : (
-                                  typeLabel.slice(0, 1).toUpperCase()
-                                )}
-                              </span>
-                              <span
-                                className={styles.tableTypeBadge}
-                                style={{
-                                  backgroundColor: typeColor.bg,
-                                  color: typeColor.text,
-                                  ...(typeColor.border ? { border: typeColor.border } : {}),
-                                }}
-                              >
-                                {typeLabel}
-                              </span>
-                            </div>
-                          </td>
-                          <td className={styles.tableCredentialCell}>
-                            <span className={styles.tableFileName} title={file.name}>
-                              {file.name}
-                            </span>
-                            <span className={styles.tableFileMeta}>
-                              {file.size ? formatFileSize(file.size) : '-'}
-                              {noteValue ? ` · ${t('auth_files.note_display')}: ${noteValue}` : ''}
-                            </span>
-                          </td>
-                          <td>
-                            <div className={styles.tableStateStack}>
-                              <button
-                                type="button"
-                                className={styles.tableStateToggle}
-                                onClick={() => toggleExpand(file.name)}
-                                aria-expanded={expanded}
-                                title={
-                                  expanded
-                                    ? t('auth_files.detail_collapse')
-                                    : t('auth_files.detail_expand')
-                                }
-                              >
-                                <IconChevronDown
-                                  size={14}
-                                  className={`${styles.tableStateChevron} ${expanded ? styles.tableStateChevronOpen : ''}`}
+                          <tr
+                            className={`${selected ? styles.authTableRowSelected : ''} ${file.disabled ? styles.authTableRowDisabled : ''} ${expanded ? styles.authTableRowExpanded : ''}`}
+                          >
+                            <td className={styles.authTableSelectCol}>
+                              {!isRuntimeOnly ? (
+                                <SelectionCheckbox
+                                  checked={selected}
+                                  onChange={() => toggleSelect(file.name)}
+                                  className={styles.tableSelection}
+                                  aria-label={
+                                    selected
+                                      ? t('auth_files.batch_deselect')
+                                      : t('auth_files.batch_select_all')
+                                  }
+                                  title={
+                                    selected
+                                      ? t('auth_files.batch_deselect')
+                                      : t('auth_files.batch_select_all')
+                                  }
                                 />
-                                <span className={`${styles.tableStateBadge} ${stateBadgeClass}`}>
-                                  {stateLabel}
+                              ) : (
+                                <span className={styles.tableMuted}>-</span>
+                              )}
+                            </td>
+                            <td className={styles.tableNumberCell}>
+                              {numberID ? `#${numberID}` : '-'}
+                            </td>
+                            <td>
+                              <div className={styles.tableProvider}>
+                                <span
+                                  className={styles.tableProviderIcon}
+                                  style={{
+                                    backgroundColor: typeColor.bg,
+                                    color: typeColor.text,
+                                    ...(typeColor.border ? { border: typeColor.border } : {}),
+                                  }}
+                                >
+                                  {providerIcon ? (
+                                    <img src={providerIcon} alt="" />
+                                  ) : (
+                                    typeLabel.slice(0, 1).toUpperCase()
+                                  )}
                                 </span>
-                                {warningCount > 0 && (
-                                  <span
-                                    className={styles.tableWarningCount}
-                                    title={t('auth_files.detail_warnings', { count: warningCount })}
-                                  >
-                                    {warningCount}
+                                <span
+                                  className={styles.tableTypeBadge}
+                                  style={{
+                                    backgroundColor: typeColor.bg,
+                                    color: typeColor.text,
+                                    ...(typeColor.border ? { border: typeColor.border } : {}),
+                                  }}
+                                >
+                                  {typeLabel}
+                                </span>
+                              </div>
+                            </td>
+                            <td className={styles.tableCredentialCell}>
+                              <span className={styles.tableFileName} title={file.name}>
+                                {file.name}
+                              </span>
+                              <span className={styles.tableFileMeta}>
+                                {file.size ? formatFileSize(file.size) : '-'}
+                                {noteValue
+                                  ? ` · ${t('auth_files.note_display')}: ${noteValue}`
+                                  : ''}
+                              </span>
+                            </td>
+                            <td>
+                              <div className={styles.tableStateStack}>
+                                <button
+                                  type="button"
+                                  className={styles.tableStateToggle}
+                                  onClick={() => toggleExpand(file.name)}
+                                  aria-expanded={expanded}
+                                  title={
+                                    expanded
+                                      ? t('auth_files.detail_collapse')
+                                      : t('auth_files.detail_expand')
+                                  }
+                                >
+                                  <IconChevronDown
+                                    size={14}
+                                    className={`${styles.tableStateChevron} ${expanded ? styles.tableStateChevronOpen : ''}`}
+                                  />
+                                  <span className={`${styles.tableStateBadge} ${stateBadgeClass}`}>
+                                    {stateLabel}
+                                  </span>
+                                  {warningCount > 0 && (
+                                    <span
+                                      className={styles.tableWarningCount}
+                                      title={t('auth_files.detail_warnings', {
+                                        count: warningCount,
+                                      })}
+                                    >
+                                      {warningCount}
+                                    </span>
+                                  )}
+                                </button>
+                                {healthSummary && (
+                                  <span className={styles.tableStatusMessage} title={healthSummary}>
+                                    <IconInfo size={13} />
+                                    <span>{healthSummary}</span>
                                   </span>
                                 )}
-                              </button>
-                              {healthSummary && (
-                                <span className={styles.tableStatusMessage} title={healthSummary}>
-                                  <IconInfo size={13} />
-                                  <span>{healthSummary}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className={styles.tableStats}>
+                                <span className={styles.tableStatSuccess}>
+                                  {t('stats.success')} {fileStats.success}
                                 </span>
-                              )}
-                            </div>
-                          </td>
-                          <td>
-                            <div className={styles.tableStats}>
-                              <span className={styles.tableStatSuccess}>
-                                {t('stats.success')} {fileStats.success}
-                              </span>
-                              <span className={styles.tableStatFailure}>
-                                {t('stats.failure')} {fileStats.failure}
-                              </span>
-                            </div>
-                          </td>
-                          <td className={styles.tableHealthCell}>
-                            <ProviderStatusBar statusData={statusData} styles={styles} />
-                          </td>
-                          <td className={styles.tableDateCell}>{formatCreated(file)}</td>
-                          <td className={styles.tableDateCell}>{formatModified(file)}</td>
-                          <td className={styles.tablePriorityCell}>
-                            {priorityValue !== undefined ? priorityValue : '-'}
-                          </td>
-                          <td className={styles.authTableActionsCol}>
-                            <div className={styles.tableActions}>
-                              {showModelsButton && (
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => showModels(file)}
-                                  className={styles.tableActionButton}
-                                  title={t('auth_files.models_button')}
-                                  disabled={disableControls}
-                                >
-                                  <IconModelCluster className={styles.actionIcon} size={16} />
-                                </Button>
-                              )}
-                              {!isRuntimeOnly && (
-                                <>
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => handleDownload(file.name)}
-                                    className={styles.tableActionButton}
-                                    title={t('auth_files.download_button')}
-                                    disabled={disableControls}
-                                  >
-                                    <IconDownload className={styles.actionIcon} size={16} />
-                                  </Button>
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() => openPrefixProxyEditor(file)}
-                                    className={styles.tableActionButton}
-                                    title={t('auth_files.prefix_proxy_button')}
-                                    disabled={disableControls}
-                                  >
-                                    <IconSettings className={styles.actionIcon} size={16} />
-                                  </Button>
-                                  <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => handleDelete(file.name)}
-                                    className={styles.tableActionButton}
-                                    title={t('auth_files.delete_button')}
-                                    disabled={disableControls || deleting === file.name}
-                                  >
-                                    {deleting === file.name ? (
-                                      <LoadingSpinner size={14} />
-                                    ) : (
-                                      <IconTrash2 className={styles.actionIcon} size={16} />
+                                <span className={styles.tableStatFailure}>
+                                  {t('stats.failure')} {fileStats.failure}
+                                </span>
+                              </div>
+                            </td>
+                            <td className={styles.tableRateLimitCell}>
+                              <div className={styles.tableRateLimit}>
+                                <div className={styles.tableRateLimitGrid}>
+                                  <span>
+                                    RPM{' '}
+                                    {formatRateLimitPair(
+                                      rateLimit?.rpm_current,
+                                      rateLimit?.rpm_limit
                                     )}
+                                  </span>
+                                  <span>
+                                    TPM{' '}
+                                    {formatRateLimitPair(
+                                      rateLimit?.tpm_current,
+                                      rateLimit?.tpm_limit,
+                                      true
+                                    )}
+                                  </span>
+                                  <span>
+                                    30m{' '}
+                                    {formatRateLimitPair(
+                                      rateLimit?.rpm_30m_current,
+                                      rateLimit?.rpm_30m_limit
+                                    )}
+                                  </span>
+                                  <span>
+                                    {t('auth_files.rate_concurrency')}{' '}
+                                    {formatRateLimitPair(
+                                      rateLimit?.in_flight,
+                                      rateLimit?.concurrency_limit
+                                    )}
+                                  </span>
+                                </div>
+                                {!isRuntimeOnly && (
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setRateLimitEditorFile(file)}
+                                    className={styles.tableRateLimitEdit}
+                                    title={t('auth_files.rate_limit_edit_button')}
+                                    disabled={disableControls}
+                                  >
+                                    <IconPencil className={styles.actionIcon} size={15} />
                                   </Button>
-                                  <ToggleSwitch
-                                    ariaLabel={t('auth_files.status_toggle_label')}
-                                    checked={!file.disabled}
-                                    disabled={disableControls || statusUpdating[file.name] === true}
-                                    onChange={(value) => handleStatusToggle(file, value)}
-                                  />
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                        {expanded && (
-                          <tr className={styles.authTableDetailRow}>
-                            <td colSpan={AUTH_TABLE_COLUMN_COUNT}>
-                              <AuthFileDetailPanel file={file} />
+                                )}
+                              </div>
+                            </td>
+                            <td className={styles.tableHealthCell}>
+                              <ProviderStatusBar statusData={statusData} styles={styles} />
+                            </td>
+                            <td className={styles.tableDateCell}>{formatCreated(file)}</td>
+                            <td className={styles.tableDateCell}>{formatModified(file)}</td>
+                            <td className={styles.tablePriorityCell}>
+                              {priorityValue !== undefined ? priorityValue : '-'}
+                            </td>
+                            <td className={styles.authTableActionsCol}>
+                              <div className={styles.tableActions}>
+                                {showModelsButton && (
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => showModels(file)}
+                                    className={styles.tableActionButton}
+                                    title={t('auth_files.models_button')}
+                                    disabled={disableControls}
+                                  >
+                                    <IconModelCluster className={styles.actionIcon} size={16} />
+                                  </Button>
+                                )}
+                                {!isRuntimeOnly && (
+                                  <>
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => handleDownload(file.name)}
+                                      className={styles.tableActionButton}
+                                      title={t('auth_files.download_button')}
+                                      disabled={disableControls}
+                                    >
+                                      <IconDownload className={styles.actionIcon} size={16} />
+                                    </Button>
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => openPrefixProxyEditor(file)}
+                                      className={styles.tableActionButton}
+                                      title={t('auth_files.prefix_proxy_button')}
+                                      disabled={disableControls}
+                                    >
+                                      <IconSettings className={styles.actionIcon} size={16} />
+                                    </Button>
+                                    <Button
+                                      variant="danger"
+                                      size="sm"
+                                      onClick={() => handleDelete(file.name)}
+                                      className={styles.tableActionButton}
+                                      title={t('auth_files.delete_button')}
+                                      disabled={disableControls || deleting === file.name}
+                                    >
+                                      {deleting === file.name ? (
+                                        <LoadingSpinner size={14} />
+                                      ) : (
+                                        <IconTrash2 className={styles.actionIcon} size={16} />
+                                      )}
+                                    </Button>
+                                    <ToggleSwitch
+                                      ariaLabel={t('auth_files.status_toggle_label')}
+                                      checked={!file.disabled}
+                                      disabled={
+                                        disableControls || statusUpdating[file.name] === true
+                                      }
+                                      onChange={(value) => handleStatusToggle(file, value)}
+                                    />
+                                  </>
+                                )}
+                              </div>
                             </td>
                           </tr>
-                        )}
+                          {expanded && (
+                            <tr className={styles.authTableDetailRow}>
+                              <td colSpan={AUTH_TABLE_COLUMN_COUNT}>
+                                <AuthFileDetailPanel file={file} />
+                              </td>
+                            </tr>
+                          )}
                         </Fragment>
                       );
                     })}
@@ -1241,6 +1309,19 @@ export function AuthFilesPage() {
         onCopyText={copyTextWithNotification}
         onSave={handlePrefixProxySave}
         onChange={handlePrefixProxyChange}
+      />
+
+      <AuthFileRateLimitEditorModal
+        file={rateLimitEditorFile}
+        disabled={disableControls}
+        onClose={() => setRateLimitEditorFile(null)}
+        onSaved={async () => {
+          showNotification(t('auth_files.rate_limit_saved_success'), 'success');
+          await loadFiles();
+        }}
+        onError={(message) =>
+          showNotification(`${t('notification.update_failed')}: ${message}`, 'error')
+        }
       />
 
       {batchActionBarVisible && typeof document !== 'undefined'

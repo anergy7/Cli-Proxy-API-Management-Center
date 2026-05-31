@@ -62,8 +62,7 @@ export function getQuota(file: AuthFileItem): AuthFileQuota | null {
   const raw = asRecord(file.quota);
   if (!raw) return null;
   const reason = typeof raw.reason === 'string' ? raw.reason.trim() : '';
-  const nextRecover =
-    typeof raw.next_recover_at === 'string' ? raw.next_recover_at : undefined;
+  const nextRecover = typeof raw.next_recover_at === 'string' ? raw.next_recover_at : undefined;
   return {
     exceeded: raw.exceeded === true,
     backoff_level: asFiniteNumber(raw.backoff_level),
@@ -80,9 +79,11 @@ export function getRateLimit(file: AuthFileItem): AuthFileRateLimit | null {
     tpm_limit: asFiniteNumber(raw.tpm_limit),
     concurrency_limit: asFiniteNumber(raw.concurrency_limit),
     rph_limit: asFiniteNumber(raw.rph_limit),
+    rpm_30m_limit: asFiniteNumber(raw.rpm_30m_limit),
     rpm_current: asFiniteNumber(raw.rpm_current),
     tpm_current: asFiniteNumber(raw.tpm_current),
     rph_current: asFiniteNumber(raw.rph_current),
+    rpm_30m_current: asFiniteNumber(raw.rpm_30m_current),
     in_flight: asFiniteNumber(raw.in_flight),
   };
 }
@@ -121,6 +122,7 @@ export function isRateLimited(rl: AuthFileRateLimit | null): boolean {
     overLimit(rl.rpm_current, rl.rpm_limit) ||
     overLimit(rl.tpm_current, rl.tpm_limit) ||
     overLimit(rl.rph_current, rl.rph_limit) ||
+    overLimit(rl.rpm_30m_current, rl.rpm_30m_limit) ||
     overLimit(rl.in_flight, rl.concurrency_limit)
   );
 }
@@ -132,9 +134,11 @@ export function hasRateLimitData(rl: AuthFileRateLimit | null): boolean {
     rl.tpm_limit,
     rl.concurrency_limit,
     rl.rph_limit,
+    rl.rpm_30m_limit,
     rl.rpm_current,
     rl.tpm_current,
     rl.rph_current,
+    rl.rpm_30m_current,
     rl.in_flight,
   ].some((value) => typeof value === 'number' && value > 0);
 }
@@ -156,7 +160,8 @@ export function classifyAuthFileHealth(file: AuthFileItem, nowMs: number): AuthF
   const isCredentialError =
     lastError !== null &&
     (lastError.retryable === false ||
-      (lastError.http_status !== undefined && CREDENTIAL_ERROR_STATUSES.has(lastError.http_status)));
+      (lastError.http_status !== undefined &&
+        CREDENTIAL_ERROR_STATUSES.has(lastError.http_status)));
   if (isCredentialError || file.unavailable === true) {
     return { level: 'error', tone: 'danger' };
   }

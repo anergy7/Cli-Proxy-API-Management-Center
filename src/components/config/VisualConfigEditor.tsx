@@ -207,6 +207,7 @@ export function VisualConfigEditor({
     validationErrors?.concurrencyLimitDefault
   );
   const rphLimitDefaultError = getValidationMessage(t, validationErrors?.rphLimitDefault);
+  const rpm30mLimitDefaultError = getValidationMessage(t, validationErrors?.rpm30mLimitDefault);
   const authAutoRefreshWorkersError = getValidationMessage(
     t,
     validationErrors?.authAutoRefreshWorkers
@@ -298,6 +299,7 @@ export function VisualConfigEditor({
           'tpmLimitDefault',
           'concurrencyLimitDefault',
           'rphLimitDefault',
+          'rpm30mLimitDefault',
           'authAutoRefreshWorkers',
         ]),
       },
@@ -901,6 +903,16 @@ export function VisualConfigEditor({
                       disabled={disabled}
                       hint={t('config_management.visual.sections.network.rate_limit_hint')}
                       error={concurrencyLimitDefaultError}
+                    />
+                    <Input
+                      label={t('config_management.visual.sections.network.rpm_30m_limit_default')}
+                      type="number"
+                      placeholder="0"
+                      value={values.rpm30mLimitDefault}
+                      onChange={(e) => onChange({ rpm30mLimitDefault: e.target.value })}
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.rate_limit_hint')}
+                      error={rpm30mLimitDefaultError}
                     />
                     <Input
                       label={t('config_management.visual.sections.network.rph_limit_default')}

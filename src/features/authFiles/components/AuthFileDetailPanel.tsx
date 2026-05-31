@@ -38,7 +38,9 @@ function RateUsageRow({ metric }: { metric: RateMetric }) {
   const { t } = useTranslation();
   const current = typeof metric.current === 'number' ? metric.current : 0;
   const hasLimit = typeof metric.limit === 'number' && metric.limit > 0;
-  const percent = hasLimit ? Math.min(100, Math.round((current / (metric.limit as number)) * 100)) : null;
+  const percent = hasLimit
+    ? Math.min(100, Math.round((current / (metric.limit as number)) * 100))
+    : null;
   const fillClass =
     percent === null
       ? styles.rateBarFillOk
@@ -62,7 +64,10 @@ function RateUsageRow({ metric }: { metric: RateMetric }) {
         </span>
         {hasLimit && (
           <div className={styles.rateBar}>
-            <div className={`${styles.rateBarFill} ${fillClass}`} style={{ width: `${percent}%` }} />
+            <div
+              className={`${styles.rateBarFill} ${fillClass}`}
+              style={{ width: `${percent}%` }}
+            />
           </div>
         )}
       </div>
@@ -103,6 +108,12 @@ export function AuthFileDetailPanel({ file }: AuthFileDetailPanelProps) {
           current: rateLimit.tpm_current,
           limit: rateLimit.tpm_limit,
           compact: true,
+        },
+        {
+          key: 'rpm30m',
+          label: t('auth_files.rate_rpm_30m'),
+          current: rateLimit.rpm_30m_current,
+          limit: rateLimit.rpm_30m_limit,
         },
         {
           key: 'rph',
