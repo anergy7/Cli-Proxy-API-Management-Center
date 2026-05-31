@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  Fragment,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -19,16 +20,36 @@ import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer'
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { Select } from '@/components/ui/Select';
-import { IconFilterAll, IconSearch } from '@/components/ui/icons';
+import {
+  IconChevronDown,
+  IconDownload,
+  IconFilterAll,
+  IconInfo,
+  IconModelCluster,
+  IconSearch,
+  IconSettings,
+  IconTrash2,
+} from '@/components/ui/icons';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import { copyToClipboard } from '@/utils/clipboard';
+import { formatFileSize } from '@/utils/format';
+import {
+  normalizeRecentRequestAuthIndex,
+  normalizeRecentRequestBuckets,
+  normalizeUsageTotal,
+  statusBarDataFromRecentRequests,
+} from '@/utils/recentRequests';
 import {
   MAX_CARD_PAGE_SIZE,
   MIN_CARD_PAGE_SIZE,
-  QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
+  formatCreated,
+  formatModified,
   getAuthFileNumberID,
   getAuthFileIcon,
   getTypeColor,
@@ -37,10 +58,16 @@ import {
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   parsePriorityValue,
-  type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
-import { AuthFileCard } from '@/features/authFiles/components/AuthFileCard';
+import {
+  HEALTH_LEVEL_I18N_KEY,
+  buildHealthSummary,
+  classifyAuthFileHealth,
+  getWarningCount,
+  type HealthTone,
+} from '@/features/authFiles/health';
+import { AuthFileDetailPanel } from '@/features/authFiles/components/AuthFileDetailPanel';
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
@@ -65,8 +92,18 @@ const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
 const easePower2In = (progress: number) => progress ** 3;
 const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
 const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
-const DEFAULT_REGULAR_PAGE_SIZE = 9;
-const DEFAULT_COMPACT_PAGE_SIZE = 12;
+const DEFAULT_REGULAR_PAGE_SIZE = 20;
+const DEFAULT_COMPACT_PAGE_SIZE = 50;
+// Keep in sync with the number of <th> columns rendered in the auth-file table;
+// used as the colSpan for the expandable detail row.
+const AUTH_TABLE_COLUMN_COUNT = 11;
+
+const HEALTH_TONE_CLASS: Record<HealthTone, string> = {
+  neutral: styles.tableStateNeutral,
+  good: styles.tableStateActive,
+  warning: styles.tableStateWarning,
+  danger: styles.tableStateError,
+};
 
 const escapeWildcardSearchSegment = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -96,9 +133,10 @@ export function AuthFilesPage() {
     regular: DEFAULT_REGULAR_PAGE_SIZE,
     compact: DEFAULT_COMPACT_PAGE_SIZE,
   });
-  const [pageSizeInput, setPageSizeInput] = useState('9');
+  const [pageSizeInput, setPageSizeInput] = useState(String(DEFAULT_REGULAR_PAGE_SIZE));
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const [batchActionBarVisible, setBatchActionBarVisible] = useState(false);
   const [uiStateHydrated, setUiStateHydrated] = useState(false);
   const floatingBatchActionsRef = useRef<HTMLDivElement>(null);
@@ -179,11 +217,6 @@ export function AuthFilesPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
-  const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
-    normalizedFilter as QuotaProviderType
-  )
-    ? (normalizedFilter as QuotaProviderType)
-    : null;
   const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
 
   useEffect(() => {
@@ -329,6 +362,18 @@ export function AuthFilesPage() {
     [loadFiles, sortMode]
   );
 
+  const toggleExpand = useCallback((name: string) => {
+    setExpandedRows((current) => {
+      const next = new Set(current);
+      if (next.has(name)) {
+        next.delete(name);
+      } else {
+        next.add(name);
+      }
+      return next;
+    });
+  }, []);
+
   const handleHeaderRefresh = useCallback(async () => {
     await Promise.all([loadFiles(), loadExcluded(), loadModelAlias()]);
   }, [loadFiles, loadExcluded, loadModelAlias]);
@@ -461,6 +506,12 @@ export function AuthFilesPage() {
     selectedNames.length === 0 ||
     batchStatusUpdating ||
     selectedHasStatusUpdating;
+
+  // Coarse "now" used to classify per-account health (recovery countdowns,
+  // etc.). Advances every 30s so badges flip when a cooldown elapses; the
+  // expandable detail panel keeps its own per-second ticker for precise values.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useInterval(() => setNowMs(Date.now()), 30_000);
 
   const copyTextWithNotification = useCallback(
     async (text: string) => {
@@ -852,29 +903,263 @@ export function AuthFilesPage() {
                 description={t('auth_files.search_empty_desc')}
               />
             ) : (
-              <div
-                className={`${styles.fileGrid} ${quotaFilterType ? styles.fileGridQuotaManaged : ''} ${compactMode ? styles.fileGridCompact : ''}`}
-              >
-                {pageItems.map((file) => (
-                  <AuthFileCard
-                    key={file.name}
-                    file={file}
-                    compact={compactMode}
-                    selected={selectedFiles.has(file.name)}
-                    resolvedTheme={resolvedTheme}
-                    disableControls={disableControls}
-                    deleting={deleting}
-                    statusUpdating={statusUpdating}
-                    quotaFilterType={quotaFilterType}
-                    statusBarCache={statusBarCache}
-                    onShowModels={showModels}
-                    onDownload={handleDownload}
-                    onOpenPrefixProxyEditor={openPrefixProxyEditor}
-                    onDelete={handleDelete}
-                    onToggleStatus={handleStatusToggle}
-                    onToggleSelect={toggleSelect}
-                  />
-                ))}
+              <div className={styles.authTableWrap}>
+                <table className={`${styles.authTable} ${compactMode ? styles.authTableCompact : ''}`}>
+                  <thead>
+                    <tr>
+                      <th className={styles.authTableSelectCol}>
+                        {t('auth_files.table_select')}
+                      </th>
+                      <th>{t('auth_files.number_id')}</th>
+                      <th>{t('auth_files.table_provider')}</th>
+                      <th>{t('auth_files.table_credential')}</th>
+                      <th>{t('auth_files.table_state')}</th>
+                      <th>{t('auth_files.table_usage')}</th>
+                      <th>{t('auth_files.health_status_label')}</th>
+                      <th>{t('auth_files.file_created')}</th>
+                      <th>{t('auth_files.file_modified')}</th>
+                      <th>{t('auth_files.priority_display')}</th>
+                      <th className={styles.authTableActionsCol}>
+                        {t('auth_files.table_actions')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageItems.map((file) => {
+                      const recentBuckets = normalizeRecentRequestBuckets(
+                        file.recent_requests ?? file.recentRequests
+                      );
+                      const fileStats = {
+                        success: normalizeUsageTotal(file.success),
+                        failure: normalizeUsageTotal(file.failed),
+                      };
+                      const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
+                      const providerKey = normalizeProviderKey(
+                        String(file.type ?? file.provider ?? 'unknown')
+                      );
+                      const isAistudio = providerKey === 'aistudio';
+                      const showModelsButton = !isRuntimeOnly || isAistudio;
+                      const typeColor = getTypeColor(providerKey, resolvedTheme);
+                      const typeLabel = getTypeLabel(t, providerKey);
+                      const providerIcon = getAuthFileIcon(providerKey, resolvedTheme);
+                      const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+                      const authIndexKey = normalizeRecentRequestAuthIndex(rawAuthIndex);
+                      const statusData =
+                        (authIndexKey && statusBarCache.get(authIndexKey)) ||
+                        statusBarDataFromRecentRequests(recentBuckets);
+                      const health = classifyAuthFileHealth(file, nowMs);
+                      const stateLabel =
+                        health.level === 'virtual'
+                          ? t('auth_files.type_virtual')
+                          : t(HEALTH_LEVEL_I18N_KEY[health.level]);
+                      const stateBadgeClass =
+                        health.level === 'virtual'
+                          ? styles.tableStateVirtual
+                          : health.level === 'disabled'
+                            ? styles.tableStateDisabled
+                            : HEALTH_TONE_CLASS[health.tone];
+                      const healthSummary = buildHealthSummary(file, t, nowMs);
+                      const warningCount = getWarningCount(file);
+                      const priorityValue = parsePriorityValue(file.priority ?? file['priority']);
+                      const numberID = getAuthFileNumberID(file);
+                      const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
+                      const selected = selectedFiles.has(file.name);
+                      const expanded = expandedRows.has(file.name);
+
+                      return (
+                        <Fragment key={file.name}>
+                        <tr
+                          className={`${selected ? styles.authTableRowSelected : ''} ${file.disabled ? styles.authTableRowDisabled : ''} ${expanded ? styles.authTableRowExpanded : ''}`}
+                        >
+                          <td className={styles.authTableSelectCol}>
+                            {!isRuntimeOnly ? (
+                              <SelectionCheckbox
+                                checked={selected}
+                                onChange={() => toggleSelect(file.name)}
+                                className={styles.tableSelection}
+                                aria-label={
+                                  selected
+                                    ? t('auth_files.batch_deselect')
+                                    : t('auth_files.batch_select_all')
+                                }
+                                title={
+                                  selected
+                                    ? t('auth_files.batch_deselect')
+                                    : t('auth_files.batch_select_all')
+                                }
+                              />
+                            ) : (
+                              <span className={styles.tableMuted}>-</span>
+                            )}
+                          </td>
+                          <td className={styles.tableNumberCell}>
+                            {numberID ? `#${numberID}` : '-'}
+                          </td>
+                          <td>
+                            <div className={styles.tableProvider}>
+                              <span
+                                className={styles.tableProviderIcon}
+                                style={{
+                                  backgroundColor: typeColor.bg,
+                                  color: typeColor.text,
+                                  ...(typeColor.border ? { border: typeColor.border } : {}),
+                                }}
+                              >
+                                {providerIcon ? (
+                                  <img src={providerIcon} alt="" />
+                                ) : (
+                                  typeLabel.slice(0, 1).toUpperCase()
+                                )}
+                              </span>
+                              <span
+                                className={styles.tableTypeBadge}
+                                style={{
+                                  backgroundColor: typeColor.bg,
+                                  color: typeColor.text,
+                                  ...(typeColor.border ? { border: typeColor.border } : {}),
+                                }}
+                              >
+                                {typeLabel}
+                              </span>
+                            </div>
+                          </td>
+                          <td className={styles.tableCredentialCell}>
+                            <span className={styles.tableFileName} title={file.name}>
+                              {file.name}
+                            </span>
+                            <span className={styles.tableFileMeta}>
+                              {file.size ? formatFileSize(file.size) : '-'}
+                              {noteValue ? ` · ${t('auth_files.note_display')}: ${noteValue}` : ''}
+                            </span>
+                          </td>
+                          <td>
+                            <div className={styles.tableStateStack}>
+                              <button
+                                type="button"
+                                className={styles.tableStateToggle}
+                                onClick={() => toggleExpand(file.name)}
+                                aria-expanded={expanded}
+                                title={
+                                  expanded
+                                    ? t('auth_files.detail_collapse')
+                                    : t('auth_files.detail_expand')
+                                }
+                              >
+                                <IconChevronDown
+                                  size={14}
+                                  className={`${styles.tableStateChevron} ${expanded ? styles.tableStateChevronOpen : ''}`}
+                                />
+                                <span className={`${styles.tableStateBadge} ${stateBadgeClass}`}>
+                                  {stateLabel}
+                                </span>
+                                {warningCount > 0 && (
+                                  <span
+                                    className={styles.tableWarningCount}
+                                    title={t('auth_files.detail_warnings', { count: warningCount })}
+                                  >
+                                    {warningCount}
+                                  </span>
+                                )}
+                              </button>
+                              {healthSummary && (
+                                <span className={styles.tableStatusMessage} title={healthSummary}>
+                                  <IconInfo size={13} />
+                                  <span>{healthSummary}</span>
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <div className={styles.tableStats}>
+                              <span className={styles.tableStatSuccess}>
+                                {t('stats.success')} {fileStats.success}
+                              </span>
+                              <span className={styles.tableStatFailure}>
+                                {t('stats.failure')} {fileStats.failure}
+                              </span>
+                            </div>
+                          </td>
+                          <td className={styles.tableHealthCell}>
+                            <ProviderStatusBar statusData={statusData} styles={styles} />
+                          </td>
+                          <td className={styles.tableDateCell}>{formatCreated(file)}</td>
+                          <td className={styles.tableDateCell}>{formatModified(file)}</td>
+                          <td className={styles.tablePriorityCell}>
+                            {priorityValue !== undefined ? priorityValue : '-'}
+                          </td>
+                          <td className={styles.authTableActionsCol}>
+                            <div className={styles.tableActions}>
+                              {showModelsButton && (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => showModels(file)}
+                                  className={styles.tableActionButton}
+                                  title={t('auth_files.models_button')}
+                                  disabled={disableControls}
+                                >
+                                  <IconModelCluster className={styles.actionIcon} size={16} />
+                                </Button>
+                              )}
+                              {!isRuntimeOnly && (
+                                <>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleDownload(file.name)}
+                                    className={styles.tableActionButton}
+                                    title={t('auth_files.download_button')}
+                                    disabled={disableControls}
+                                  >
+                                    <IconDownload className={styles.actionIcon} size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => openPrefixProxyEditor(file)}
+                                    className={styles.tableActionButton}
+                                    title={t('auth_files.prefix_proxy_button')}
+                                    disabled={disableControls}
+                                  >
+                                    <IconSettings className={styles.actionIcon} size={16} />
+                                  </Button>
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={() => handleDelete(file.name)}
+                                    className={styles.tableActionButton}
+                                    title={t('auth_files.delete_button')}
+                                    disabled={disableControls || deleting === file.name}
+                                  >
+                                    {deleting === file.name ? (
+                                      <LoadingSpinner size={14} />
+                                    ) : (
+                                      <IconTrash2 className={styles.actionIcon} size={16} />
+                                    )}
+                                  </Button>
+                                  <ToggleSwitch
+                                    ariaLabel={t('auth_files.status_toggle_label')}
+                                    checked={!file.disabled}
+                                    disabled={disableControls || statusUpdating[file.name] === true}
+                                    onChange={(value) => handleStatusToggle(file, value)}
+                                  />
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {expanded && (
+                          <tr className={styles.authTableDetailRow}>
+                            <td colSpan={AUTH_TABLE_COLUMN_COUNT}>
+                              <AuthFileDetailPanel file={file} />
+                            </td>
+                          </tr>
+                        )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
 
