@@ -2069,7 +2069,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  min-width: 1140px;
+  min-width: 1240px;
 
   thead th {
     position: sticky;
@@ -2200,6 +2200,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 260px;
+}
+
+.tableProxyCell {
+  max-width: 150px;
+}
+
+.tableProxyHost {
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .tableStateStack {

@@ -389,6 +389,7 @@
     "table_select": "Select",
     "table_provider": "Provider",
     "table_credential": "Credential",
+    "table_ip": "IP",
     "table_usage": "Usage",
     "table_failure_reason": "Failure reason",
     "table_failure_no_detail": "Failures recorded, no error detail yet",

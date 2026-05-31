@@ -103,7 +103,7 @@ const DEFAULT_REGULAR_PAGE_SIZE = 20;
 const DEFAULT_COMPACT_PAGE_SIZE = 50;
 // Keep in sync with the number of <th> columns rendered in the auth-file table;
 // used as the colSpan for the expandable detail row.
-const AUTH_TABLE_COLUMN_COUNT = 13;
+const AUTH_TABLE_COLUMN_COUNT = 14;
 
 const HEALTH_TONE_CLASS: Record<HealthTone, string> = {
   neutral: styles.tableStateNeutral,
@@ -125,6 +125,32 @@ const formatRateLimitPair = (current?: number, limit?: number, compact = false):
   const safeCurrent = typeof current === 'number' && Number.isFinite(current) ? current : 0;
   const hasLimit = typeof limit === 'number' && Number.isFinite(limit) && limit > 0;
   return `${fmt(safeCurrent)}/${hasLimit ? fmt(limit) : '∞'}`;
+};
+
+const getProxyURL = (file: AuthFileItem): string => {
+  const raw = file.proxy_url ?? file.proxyUrl;
+  return typeof raw === 'string' ? raw.trim() : '';
+};
+
+const formatProxyHost = (proxyURL: string): string => {
+  const raw = proxyURL.trim();
+  if (!raw) return '';
+  const parse = (value: string) => {
+    try {
+      return new URL(value).hostname;
+    } catch {
+      return '';
+    }
+  };
+  const withScheme = raw.includes('://') ? raw : `proxy://${raw}`;
+  const parsed = parse(withScheme);
+  if (parsed) return parsed;
+  const withoutAuth = raw.includes('@') ? raw.slice(raw.lastIndexOf('@') + 1) : raw;
+  if (withoutAuth.startsWith('[')) {
+    const end = withoutAuth.indexOf(']');
+    return end > 0 ? withoutAuth.slice(1, end) : withoutAuth;
+  }
+  return withoutAuth.split('/')[0].split(':')[0].trim();
 };
 
 const failureParts = (file: AuthFileItem): { title: string; message: string; tags: string[] }[] => {
@@ -964,6 +990,7 @@ export function AuthFilesPage() {
                       <th>{t('auth_files.number_id')}</th>
                       <th>{t('auth_files.table_provider')}</th>
                       <th>{t('auth_files.table_credential')}</th>
+                      <th>{t('auth_files.table_ip')}</th>
                       <th>{t('auth_files.table_state')}</th>
                       <th>{t('auth_files.table_usage')}</th>
                       <th>{t('auth_files.table_failure_reason')}</th>
@@ -1018,6 +1045,8 @@ export function AuthFilesPage() {
                       const numberID = getAuthFileNumberID(file);
                       const noteValue = typeof file.note === 'string' ? file.note.trim() : '';
                       const failures = failureParts(file);
+                      const proxyURL = getProxyURL(file);
+                      const proxyHost = formatProxyHost(proxyURL);
                       const selected = selectedFiles.has(file.name);
                       const expanded = expandedRows.has(file.name);
 
@@ -1088,6 +1117,15 @@ export function AuthFilesPage() {
                                   ? ` · ${t('auth_files.note_display')}: ${noteValue}`
                                   : ''}
                               </span>
+                            </td>
+                            <td className={styles.tableProxyCell}>
+                              {proxyHost ? (
+                                <span className={styles.tableProxyHost} title={proxyHost}>
+                                  {proxyHost}
+                                </span>
+                              ) : (
+                                <span className={styles.tableMuted}>-</span>
+                              )}
                             </td>
                             <td>
                               <div className={styles.tableStateStack}>

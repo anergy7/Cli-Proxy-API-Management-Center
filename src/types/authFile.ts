@@ -82,6 +82,8 @@ export interface AuthFileItem {
   createdAt?: string | number;
   lastRefresh?: string | number;
   modified?: number;
+  proxyUrl?: string;
+  proxy_url?: string;
   priority?: number | string;
   note?: string;
   success?: unknown;

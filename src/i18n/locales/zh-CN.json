@@ -389,6 +389,7 @@
     "table_select": "选择",
     "table_provider": "提供方",
     "table_credential": "凭据",
+    "table_ip": "IP",
     "table_usage": "用量",
     "table_failure_reason": "失败原因",
     "table_failure_no_detail": "有失败记录，暂无具体错误",
