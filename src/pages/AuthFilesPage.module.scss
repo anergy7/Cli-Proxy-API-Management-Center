@@ -2069,7 +2069,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  min-width: 1280px;
+  min-width: 1180px;
 
   thead th {
     position: sticky;
@@ -2218,18 +2218,36 @@
 }
 
 .tableProxyCell {
-  max-width: 150px;
+  max-width: 180px;
+}
+
+.tableProxyStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .tableProxyHost {
-  display: inline-block;
-  max-width: 150px;
+  display: block;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   color: var(--text-secondary);
+}
+
+.tableOrderID {
+  display: block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  color: var(--text-tertiary);
 }
 
 .tableQuotaCell {
@@ -2421,31 +2439,6 @@
   color: var(--danger-color, #ef4444);
 }
 
-.tableHealthCell {
-  width: 112px;
-  min-width: 112px;
-  max-width: 112px;
-
-  .statusBar {
-    gap: 5px;
-  }
-
-  .statusBlocks {
-    gap: 2px;
-  }
-
-  .statusBlock {
-    height: 5px;
-  }
-
-  .statusRate {
-    min-width: 32px;
-    justify-content: center;
-    padding: 2px 5px;
-    font-size: 10px;
-  }
-}
-
 .tableRateLimitCell {
   min-width: 210px;
 }
@@ -2453,6 +2446,13 @@
 .tableFailureCell {
   min-width: 240px;
   max-width: 340px;
+}
+
+.tableFailureHealth {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
 }
 
 .tableFailureButton {

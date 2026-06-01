@@ -6,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ChangeEvent,
   Fragment,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -47,10 +46,7 @@ import {
   statusBarDataFromRecentRequests,
 } from '@/utils/recentRequests';
 import {
-  MAX_CARD_PAGE_SIZE,
-  MIN_CARD_PAGE_SIZE,
   QUOTA_PROVIDER_TYPES,
-  clampCardPageSize,
   formatCreated,
   formatCreatedCompact,
   formatModified,
@@ -105,11 +101,10 @@ const easePower3Out = (progress: number) => 1 - (1 - progress) ** 4;
 const easePower2In = (progress: number) => progress ** 3;
 const BATCH_BAR_BASE_TRANSFORM = 'translateX(-50%)';
 const BATCH_BAR_HIDDEN_TRANSFORM = 'translateX(-50%) translateY(56px)';
-const DEFAULT_REGULAR_PAGE_SIZE = 20;
-const DEFAULT_COMPACT_PAGE_SIZE = 50;
+const AUTH_FILES_PAGE_SIZE = 100;
 // Keep in sync with the number of <th> columns rendered in the auth-file table;
 // used as the colSpan for the expandable detail row.
-const AUTH_TABLE_COLUMN_COUNT = 14;
+const AUTH_TABLE_COLUMN_COUNT = 13;
 
 const HEALTH_TONE_CLASS: Record<HealthTone, string> = {
   neutral: styles.tableStateNeutral,
@@ -142,6 +137,11 @@ const formatRateLimitPair = (current?: number, limit?: number, compact = false):
 const getProxyURL = (file: AuthFileItem): string => {
   const raw = file.proxy_url ?? file.proxyUrl;
   return typeof raw === 'string' ? raw.trim() : '';
+};
+
+const getOrderID = (file: AuthFileItem): string => {
+  const raw = file.order_id ?? file.orderId ?? file['order'];
+  return typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim() : '';
 };
 
 const formatProxyHost = (proxyURL: string): string => {
@@ -217,11 +217,6 @@ export function AuthFilesPage() {
   const [compactMode, setCompactMode] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSizeByMode, setPageSizeByMode] = useState({
-    regular: DEFAULT_REGULAR_PAGE_SIZE,
-    compact: DEFAULT_COMPACT_PAGE_SIZE,
-  });
-  const [pageSizeInput, setPageSizeInput] = useState(String(DEFAULT_REGULAR_PAGE_SIZE));
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('list');
   const [sortMode, setSortMode] = useState<AuthFilesSortMode>('default');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
@@ -306,7 +301,7 @@ export function AuthFilesPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
-  const pageSize = compactMode ? pageSizeByMode.compact : pageSizeByMode.regular;
+  const pageSize = AUTH_FILES_PAGE_SIZE;
 
   useEffect(() => {
     const persistedCompactMode = readPersistedAuthFilesCompactMode();
@@ -337,22 +332,6 @@ export function AuthFilesPage() {
       if (typeof persisted.page === 'number' && Number.isFinite(persisted.page)) {
         setPage(Math.max(1, Math.round(persisted.page)));
       }
-      const legacyPageSize =
-        typeof persisted.pageSize === 'number' && Number.isFinite(persisted.pageSize)
-          ? clampCardPageSize(persisted.pageSize)
-          : null;
-      const regularPageSize =
-        typeof persisted.regularPageSize === 'number' && Number.isFinite(persisted.regularPageSize)
-          ? clampCardPageSize(persisted.regularPageSize)
-          : (legacyPageSize ?? DEFAULT_REGULAR_PAGE_SIZE);
-      const compactPageSize =
-        typeof persisted.compactPageSize === 'number' && Number.isFinite(persisted.compactPageSize)
-          ? clampCardPageSize(persisted.compactPageSize)
-          : (legacyPageSize ?? DEFAULT_COMPACT_PAGE_SIZE);
-      setPageSizeByMode({
-        regular: regularPageSize,
-        compact: compactPageSize,
-      });
       if (isAuthFilesSortMode(persisted.sortMode)) {
         setSortMode(persisted.sortMode);
       }
@@ -372,9 +351,6 @@ export function AuthFilesPage() {
       compactMode,
       search,
       page,
-      pageSize,
-      regularPageSize: pageSizeByMode.regular,
-      compactPageSize: pageSizeByMode.compact,
       sortMode,
     });
     writePersistedAuthFilesCompactMode(compactMode);
@@ -384,62 +360,11 @@ export function AuthFilesPage() {
     enabledOnly,
     filter,
     page,
-    pageSize,
-    pageSizeByMode,
     problemOnly,
     search,
     sortMode,
     uiStateHydrated,
   ]);
-
-  useEffect(() => {
-    setPageSizeInput(String(pageSize));
-  }, [pageSize]);
-
-  const setCurrentModePageSize = useCallback(
-    (next: number) => {
-      setPageSizeByMode((current) =>
-        compactMode ? { ...current, compact: next } : { ...current, regular: next }
-      );
-    },
-    [compactMode]
-  );
-
-  const commitPageSizeInput = (rawValue: string) => {
-    const trimmed = rawValue.trim();
-    if (!trimmed) {
-      setPageSizeInput(String(pageSize));
-      return;
-    }
-
-    const value = Number(trimmed);
-    if (!Number.isFinite(value)) {
-      setPageSizeInput(String(pageSize));
-      return;
-    }
-
-    const next = clampCardPageSize(value);
-    setCurrentModePageSize(next);
-    setPageSizeInput(String(next));
-    setPage(1);
-  };
-
-  const handlePageSizeChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const rawValue = event.currentTarget.value;
-    setPageSizeInput(rawValue);
-
-    const trimmed = rawValue.trim();
-    if (!trimmed) return;
-
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed)) return;
-
-    const rounded = Math.round(parsed);
-    if (rounded < MIN_CARD_PAGE_SIZE || rounded > MAX_CARD_PAGE_SIZE) return;
-
-    setCurrentModePageSize(rounded);
-    setPage(1);
-  };
 
   const handleSortModeChange = useCallback(
     (value: string) => {
@@ -885,24 +810,6 @@ export function AuthFilesPage() {
                   />
                 </div>
                 <div className={styles.filterItem}>
-                  <label>{t('auth_files.page_size_label')}</label>
-                  <input
-                    className={styles.pageSizeSelect}
-                    type="number"
-                    min={MIN_CARD_PAGE_SIZE}
-                    max={MAX_CARD_PAGE_SIZE}
-                    step={1}
-                    value={pageSizeInput}
-                    onChange={handlePageSizeChange}
-                    onBlur={(e) => commitPageSizeInput(e.currentTarget.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.currentTarget.blur();
-                      }
-                    }}
-                  />
-                </div>
-                <div className={styles.filterItem}>
                   <label>{t('auth_files.sort_label')}</label>
                   <Select
                     className={styles.sortSelect}
@@ -1005,9 +912,8 @@ export function AuthFilesPage() {
                       <th>{t('auth_files.table_ip')}</th>
                       <th>{t('auth_files.table_state')}</th>
                       <th>{t('auth_files.table_usage')}</th>
-                      <th>{t('auth_files.table_failure_reason')}</th>
+                      <th>{t('auth_files.table_failure_health')}</th>
                       <th>{t('auth_files.table_rate_limits')}</th>
-                      <th>{t('auth_files.health_status_label')}</th>
                       <th>{t('auth_files.table_quota_status')}</th>
                       <th>{t('auth_files.file_modified')}</th>
                       <th>{t('auth_files.priority_display')}</th>
@@ -1059,6 +965,7 @@ export function AuthFilesPage() {
                       const failures = failureParts(file);
                       const proxyURL = getProxyURL(file);
                       const proxyHost = formatProxyHost(proxyURL);
+                      const orderID = getOrderID(file);
                       const selected = selectedFiles.has(file.name);
                       const expanded = expandedRows.has(file.name);
                       const createdLabel = formatCreated(file);
@@ -1129,13 +1036,20 @@ export function AuthFilesPage() {
                               </span>
                             </td>
                             <td className={styles.tableProxyCell}>
-                              {proxyHost ? (
-                                <span className={styles.tableProxyHost} title={proxyHost}>
-                                  {proxyHost}
-                                </span>
-                              ) : (
-                                <span className={styles.tableMuted}>-</span>
-                              )}
+                              <div className={styles.tableProxyStack}>
+                                {orderID && (
+                                  <span className={styles.tableOrderID} title={orderID}>
+                                    {orderID}
+                                  </span>
+                                )}
+                                {proxyHost ? (
+                                  <span className={styles.tableProxyHost} title={proxyHost}>
+                                    {proxyHost}
+                                  </span>
+                                ) : (
+                                  <span className={styles.tableMuted}>-</span>
+                                )}
+                              </div>
                             </td>
                             <td>
                               <div className={styles.tableStateStack}>
@@ -1187,42 +1101,45 @@ export function AuthFilesPage() {
                               </div>
                             </td>
                             <td className={styles.tableFailureCell}>
-                              {failures.length > 0 ? (
-                                <button
-                                  type="button"
-                                  className={styles.tableFailureButton}
-                                  onClick={() => toggleExpand(file.name)}
-                                  title={failures
-                                    .map((item) =>
-                                      [item.title, item.tags.join(' '), item.message]
-                                        .filter(Boolean)
-                                        .join(' · ')
-                                    )
-                                    .join('\n')}
-                                >
-                                  <span className={styles.tableFailureTags}>
-                                    {failures[0].tags.slice(0, 2).map((tag) => (
-                                      <span key={tag} className={styles.tableFailureTag}>
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </span>
-                                  <span className={styles.tableFailureText}>
-                                    {failures[0].message}
-                                  </span>
-                                  {failures.length > 1 && (
-                                    <span className={styles.tableFailureMore}>
-                                      +{failures.length - 1}
+                              <div className={styles.tableFailureHealth}>
+                                <ProviderStatusBar statusData={statusData} styles={styles} />
+                                {failures.length > 0 ? (
+                                  <button
+                                    type="button"
+                                    className={styles.tableFailureButton}
+                                    onClick={() => toggleExpand(file.name)}
+                                    title={failures
+                                      .map((item) =>
+                                        [item.title, item.tags.join(' '), item.message]
+                                          .filter(Boolean)
+                                          .join(' · ')
+                                      )
+                                      .join('\n')}
+                                  >
+                                    <span className={styles.tableFailureTags}>
+                                      {failures[0].tags.slice(0, 2).map((tag) => (
+                                        <span key={tag} className={styles.tableFailureTag}>
+                                          {tag}
+                                        </span>
+                                      ))}
                                     </span>
-                                  )}
-                                </button>
-                              ) : fileStats.failure > 0 ? (
-                                <span className={styles.tableMuted}>
-                                  {t('auth_files.table_failure_no_detail')}
-                                </span>
-                              ) : (
-                                <span className={styles.tableMuted}>-</span>
-                              )}
+                                    <span className={styles.tableFailureText}>
+                                      {failures[0].message}
+                                    </span>
+                                    {failures.length > 1 && (
+                                      <span className={styles.tableFailureMore}>
+                                        +{failures.length - 1}
+                                      </span>
+                                    )}
+                                  </button>
+                                ) : fileStats.failure > 0 ? (
+                                  <span className={styles.tableMuted}>
+                                    {t('auth_files.table_failure_no_detail')}
+                                  </span>
+                                ) : (
+                                  <span className={styles.tableMuted}>-</span>
+                                )}
+                              </div>
                             </td>
                             <td className={styles.tableRateLimitCell}>
                               <div className={styles.tableRateLimit}>
@@ -1277,9 +1194,6 @@ export function AuthFilesPage() {
                                   </Button>
                                 )}
                               </div>
-                            </td>
-                            <td className={styles.tableHealthCell}>
-                              <ProviderStatusBar statusData={statusData} styles={styles} />
                             </td>
                             <td className={styles.tableQuotaCell}>
                               {quotaType && !isRuntimeOnly ? (

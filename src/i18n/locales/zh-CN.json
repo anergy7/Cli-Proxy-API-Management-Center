@@ -392,6 +392,7 @@
     "table_ip": "IP",
     "table_usage": "用量",
     "table_failure_reason": "失败原因",
+    "table_failure_health": "失败/健康",
     "table_failure_no_detail": "有失败记录，暂无具体错误",
     "table_rate_limits": "限流",
     "table_quota_status": "本地配额",

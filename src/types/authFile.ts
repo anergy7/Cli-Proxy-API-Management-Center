@@ -84,6 +84,8 @@ export interface AuthFileItem {
   modified?: number;
   proxyUrl?: string;
   proxy_url?: string;
+  orderId?: string | number;
+  order_id?: string | number;
   priority?: number | string;
   note?: string;
   success?: unknown;

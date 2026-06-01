@@ -392,6 +392,7 @@
     "table_ip": "IP",
     "table_usage": "Usage",
     "table_failure_reason": "Failure reason",
+    "table_failure_health": "Failure / health",
     "table_failure_no_detail": "Failures recorded, no error detail yet",
     "table_rate_limits": "Rate limits",
     "table_quota_status": "Local quota",
