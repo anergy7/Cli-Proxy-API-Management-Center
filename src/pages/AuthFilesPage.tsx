@@ -80,6 +80,7 @@ import {
 import { AuthFileRateLimitEditorModal } from '@/features/authFiles/components/AuthFileRateLimitEditorModal';
 import { AuthFileDetailPanel } from '@/features/authFiles/components/AuthFileDetailPanel';
 import { AuthFileModelsModal } from '@/features/authFiles/components/AuthFileModelsModal';
+import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import { AuthFilesPrefixProxyEditorModal } from '@/features/authFiles/components/AuthFilesPrefixProxyEditorModal';
 import { OAuthExcludedCard } from '@/features/authFiles/components/OAuthExcludedCard';
 import { OAuthModelAliasCard } from '@/features/authFiles/components/OAuthModelAliasCard';
@@ -108,7 +109,7 @@ const DEFAULT_REGULAR_PAGE_SIZE = 20;
 const DEFAULT_COMPACT_PAGE_SIZE = 50;
 // Keep in sync with the number of <th> columns rendered in the auth-file table;
 // used as the colSpan for the expandable detail row.
-const AUTH_TABLE_COLUMN_COUNT = 13;
+const AUTH_TABLE_COLUMN_COUNT = 14;
 
 const HEALTH_TONE_CLASS: Record<HealthTone, string> = {
   neutral: styles.tableStateNeutral,
@@ -1007,6 +1008,7 @@ export function AuthFilesPage() {
                       <th>{t('auth_files.table_failure_reason')}</th>
                       <th>{t('auth_files.table_rate_limits')}</th>
                       <th>{t('auth_files.health_status_label')}</th>
+                      <th>{t('auth_files.table_quota_status')}</th>
                       <th>{t('auth_files.file_modified')}</th>
                       <th>{t('auth_files.priority_display')}</th>
                       <th className={styles.authTableActionsCol}>
@@ -1278,6 +1280,18 @@ export function AuthFilesPage() {
                             </td>
                             <td className={styles.tableHealthCell}>
                               <ProviderStatusBar statusData={statusData} styles={styles} />
+                            </td>
+                            <td className={styles.tableQuotaCell}>
+                              {quotaType && !isRuntimeOnly ? (
+                                <AuthFileQuotaSection
+                                  file={file}
+                                  quotaType={quotaType}
+                                  disableControls={disableControls}
+                                  compact
+                                />
+                              ) : (
+                                <span className={styles.tableMuted}>-</span>
+                              )}
                             </td>
                             <td className={styles.tableDateCell} title={modifiedLabel}>
                               {formatModifiedCompact(file)}

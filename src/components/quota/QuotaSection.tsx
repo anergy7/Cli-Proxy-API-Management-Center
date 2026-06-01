@@ -246,7 +246,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                             size="sm"
                             className={styles.quotaStatusButton}
                             onClick={() => onToggleStatus(file, disabledFile)}
-                            disabled={disabled || statusUpdating[file.name] === true}
+                            disabled={statusUpdating[file.name] === true}
                             loading={statusUpdating[file.name] === true}
                           >
                             {disabledFile

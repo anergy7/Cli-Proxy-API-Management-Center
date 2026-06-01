@@ -1,6 +1,8 @@
 import { useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { Button } from '@/components/ui/Button';
+import { IconRefreshCw } from '@/components/ui/icons';
 import {
   ANTIGRAVITY_CONFIG,
   CLAUDE_CONFIG,
@@ -10,7 +12,15 @@ import {
   XAI_CONFIG,
 } from '@/components/quota';
 import { useNotificationStore, useQuotaStore } from '@/stores';
-import type { AuthFileItem } from '@/types';
+import type {
+  AntigravityQuotaState,
+  AuthFileItem,
+  ClaudeQuotaState,
+  CodexQuotaState,
+  GeminiCliQuotaState,
+  KimiQuotaState,
+  XaiQuotaState,
+} from '@/types';
 import { getStatusFromError } from '@/utils/quota';
 import {
   isRuntimeOnlyAuthFile,
@@ -20,7 +30,20 @@ import {
 import { QuotaProgressBar } from '@/features/authFiles/components/QuotaProgressBar';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
-type QuotaState = { status?: string; error?: string; errorStatus?: number } | undefined;
+type QuotaState =
+  | AntigravityQuotaState
+  | ClaudeQuotaState
+  | CodexQuotaState
+  | GeminiCliQuotaState
+  | KimiQuotaState
+  | XaiQuotaState
+  | undefined;
+
+type QuotaSummaryItem = {
+  key: string;
+  label: string;
+  value: string;
+};
 
 const getQuotaConfig = (type: QuotaProviderType) => {
   if (type === 'antigravity') return ANTIGRAVITY_CONFIG;
@@ -35,10 +58,103 @@ export type AuthFileQuotaSectionProps = {
   file: AuthFileItem;
   quotaType: QuotaProviderType;
   disableControls: boolean;
+  compact?: boolean;
+};
+
+const formatPercent = (value: number | null | undefined): string => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
+};
+
+const formatCountPair = (current: number, limit: number): string => {
+  if (!Number.isFinite(current) || !Number.isFinite(limit) || limit <= 0) return '-';
+  return `${Math.max(0, Math.round(current))}/${Math.round(limit)}`;
+};
+
+const labelFromQuotaItem = (
+  t: TFunction,
+  item: { label?: string; labelKey?: string; labelParams?: Record<string, string | number> }
+): string => {
+  if (item.labelKey) return t(item.labelKey, item.labelParams ?? {});
+  return item.label ?? '-';
+};
+
+const summarizeQuota = (
+  quotaType: QuotaProviderType,
+  quota: Exclude<QuotaState, undefined>,
+  t: TFunction
+): QuotaSummaryItem[] => {
+  if (quota.status !== 'success') return [];
+
+  if (quotaType === 'claude') {
+    const state = quota as ClaudeQuotaState;
+    return state.windows.slice(0, 2).map((window) => ({
+      key: window.id,
+      label: labelFromQuotaItem(t, window),
+      value: formatPercent(
+        typeof window.usedPercent === 'number' ? 100 - window.usedPercent : null
+      ),
+    }));
+  }
+
+  if (quotaType === 'codex') {
+    const state = quota as CodexQuotaState;
+    return state.windows.slice(0, 2).map((window) => ({
+      key: window.id,
+      label: labelFromQuotaItem(t, window),
+      value: formatPercent(
+        typeof window.usedPercent === 'number' ? 100 - window.usedPercent : null
+      ),
+    }));
+  }
+
+  if (quotaType === 'antigravity') {
+    const state = quota as AntigravityQuotaState;
+    return state.groups.slice(0, 2).map((group) => ({
+      key: group.id,
+      label: group.label,
+      value: formatPercent(group.remainingFraction * 100),
+    }));
+  }
+
+  if (quotaType === 'gemini-cli') {
+    const state = quota as GeminiCliQuotaState;
+    return state.buckets.slice(0, 2).map((bucket) => ({
+      key: bucket.id,
+      label: bucket.label,
+      value:
+        typeof bucket.remainingAmount === 'number'
+          ? String(Math.round(bucket.remainingAmount))
+          : formatPercent(
+              typeof bucket.remainingFraction === 'number' ? bucket.remainingFraction * 100 : null
+            ),
+    }));
+  }
+
+  if (quotaType === 'kimi') {
+    const state = quota as KimiQuotaState;
+    return state.rows.slice(0, 2).map((row) => ({
+      key: row.id,
+      label: labelFromQuotaItem(t, row),
+      value: formatCountPair(Math.max(0, row.limit - row.used), row.limit),
+    }));
+  }
+
+  const state = quota as XaiQuotaState;
+  if (!state.billing) return [];
+  return [
+    {
+      key: 'monthly',
+      label: t('xai_quota.monthly_credits'),
+      value: formatPercent(
+        typeof state.billing.usedPercent === 'number' ? 100 - state.billing.usedPercent : null
+      ),
+    },
+  ];
 };
 
 export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
-  const { file, quotaType, disableControls } = props;
+  const { file, quotaType, disableControls, compact = false } = props;
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
 
@@ -112,6 +228,61 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
     quota?.errorStatus,
     quota?.error || t('common.unknown_error')
   );
+
+  if (compact) {
+    const summaryItems =
+      quota && quota.status === 'success' ? summarizeQuota(quotaType, quota, t) : [];
+    const statusLabel =
+      quotaStatus === 'loading'
+        ? t('auth_files.quota_status_loading')
+        : quotaStatus === 'error'
+          ? t('auth_files.quota_status_error')
+          : quotaStatus === 'success'
+            ? t('auth_files.quota_status_success')
+            : t('auth_files.quota_status_idle');
+
+    return (
+      <div className={styles.tableQuotaCompact}>
+        <div className={styles.tableQuotaHeader}>
+          <span
+            className={`${styles.tableQuotaBadge} ${
+              quotaStatus === 'error' ? styles.tableQuotaBadgeError : ''
+            }`}
+            title={quotaStatus === 'error' ? quotaErrorMessage : statusLabel}
+          >
+            {statusLabel}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            className={styles.tableQuotaRefresh}
+            onClick={() => void refreshQuotaForFile()}
+            disabled={!canRefreshQuota || quotaStatus === 'loading'}
+            loading={quotaStatus === 'loading'}
+            title={t('common.refresh')}
+            aria-label={t('common.refresh')}
+          >
+            {quotaStatus !== 'loading' && <IconRefreshCw size={14} />}
+          </Button>
+        </div>
+        {quotaStatus === 'error' ? (
+          <span className={styles.tableQuotaError} title={quotaErrorMessage}>
+            {quotaErrorMessage}
+          </span>
+        ) : summaryItems.length > 0 ? (
+          <div className={styles.tableQuotaItems}>
+            {summaryItems.map((item) => (
+              <span key={item.key} className={styles.tableQuotaItem} title={item.label}>
+                {item.label}: {item.value}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className={styles.tableMuted}>-</span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={styles.quotaSection}>
