@@ -1120,6 +1120,7 @@
     "filter_all": "Все",
     "filter_enabled": "Включено",
     "filter_disabled": "Отключено",
+    "table_number": "№",
     "table_provider": "Провайдер",
     "table_credential": "Учётные данные",
     "table_enabled": "Статус",

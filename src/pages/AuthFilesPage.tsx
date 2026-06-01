@@ -566,10 +566,18 @@ export function AuthFilesPage() {
     return JSON.stringify(rows, null, 2);
   }, [selectedExportFiles]);
 
+  const buildSelectedCredentialsCopyText = useCallback(
+    () =>
+      selectedExportFiles
+        .map((file) => [getAccountName(file), getOrderID(file)].filter(Boolean).join('\t'))
+        .join('\n'),
+    [selectedExportFiles]
+  );
+
   const copySelectedCredentialsExport = useCallback(async () => {
     if (selectedExportFiles.length === 0) return;
-    await copyTextWithNotification(buildSelectedCredentialsExport());
-  }, [buildSelectedCredentialsExport, copyTextWithNotification, selectedExportFiles.length]);
+    await copyTextWithNotification(buildSelectedCredentialsCopyText());
+  }, [buildSelectedCredentialsCopyText, copyTextWithNotification, selectedExportFiles.length]);
 
   const downloadSelectedCredentialsExport = useCallback(() => {
     if (selectedExportFiles.length === 0 || typeof document === 'undefined') return;

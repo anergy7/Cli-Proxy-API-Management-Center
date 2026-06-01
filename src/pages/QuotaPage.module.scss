@@ -488,26 +488,39 @@
 
   th:nth-child(1),
   td:nth-child(1) {
-    width: 140px;
+    width: 72px;
   }
 
-  th:nth-child(3),
-  td:nth-child(3) {
+  th:nth-child(2),
+  td:nth-child(2) {
+    width: 120px;
+  }
+
+  th:nth-child(4),
+  td:nth-child(4) {
     width: 170px;
   }
 
-  th:nth-child(5),
-  td:nth-child(5) {
+  th:nth-child(6),
+  td:nth-child(6) {
     width: 110px;
   }
 
   @include mobile {
-    min-width: 760px;
+    min-width: 820px;
   }
 }
 
 .quotaTableRowDisabled {
   opacity: 0.72;
+}
+
+.quotaNumberCell {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .quotaTypeBadge {

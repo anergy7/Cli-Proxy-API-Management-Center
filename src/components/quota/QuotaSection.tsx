@@ -212,6 +212,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
           <table className={styles.quotaTable}>
             <thead>
               <tr>
+                <th>{t('quota_management.table_number')}</th>
                 <th>{t('quota_management.table_provider')}</th>
                 <th>{t('quota_management.table_credential')}</th>
                 <th>{t('quota_management.table_enabled')}</th>
@@ -227,7 +228,6 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 const orderID = getOrderID(file);
                 const createdLabel = formatCreatedCompact(file);
                 const metaItems = [
-                  numberID ? t('quota_management.credential_number', { id: numberID }) : '',
                   orderID ? t('quota_management.credential_order', { order: orderID }) : '',
                   createdLabel !== '-'
                     ? t('quota_management.credential_created', { time: createdLabel })
@@ -235,6 +235,9 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 ].filter(Boolean);
                 return (
                   <tr key={file.name} className={disabledFile ? styles.quotaTableRowDisabled : ''}>
+                    <td className={styles.quotaNumberCell}>
+                      {numberID ? t('quota_management.credential_number', { id: numberID }) : '-'}
+                    </td>
                     <td>
                       <span className={styles.quotaTypeBadge}>
                         {getTypeLabel(t, String(displayType))}
