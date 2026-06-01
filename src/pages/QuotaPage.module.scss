@@ -493,12 +493,12 @@
 
   th:nth-child(3),
   td:nth-child(3) {
-    width: 110px;
+    width: 170px;
   }
 
   th:nth-child(5),
   td:nth-child(5) {
-    width: 178px;
+    width: 110px;
   }
 
   @include mobile {
@@ -547,6 +547,18 @@
   font-weight: 600;
 }
 
+.quotaStatusCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.quotaStatusButton:global(.btn.btn-sm) {
+  padding-inline: 10px;
+  min-width: 52px;
+}
+
 .quotaStatusEnabled {
   background: rgba($success-color, 0.12);
   color: var(--success-color);
@@ -571,9 +583,6 @@
 }
 
 .quotaActionsCell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   white-space: nowrap;
 }
 

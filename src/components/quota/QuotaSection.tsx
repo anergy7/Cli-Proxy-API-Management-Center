@@ -230,31 +230,34 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                       </div>
                     </td>
                     <td>
-                      <span
-                        className={`${styles.quotaStatusBadge} ${
-                          disabledFile ? styles.quotaStatusDisabled : styles.quotaStatusEnabled
-                        }`}
-                      >
-                        {disabledFile
-                          ? t('quota_management.filter_disabled')
-                          : t('quota_management.filter_enabled')}
-                      </span>
+                      <div className={styles.quotaStatusCell}>
+                        <span
+                          className={`${styles.quotaStatusBadge} ${
+                            disabledFile ? styles.quotaStatusDisabled : styles.quotaStatusEnabled
+                          }`}
+                        >
+                          {disabledFile
+                            ? t('quota_management.filter_disabled')
+                            : t('quota_management.filter_enabled')}
+                        </span>
+                        {onToggleStatus && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className={styles.quotaStatusButton}
+                            onClick={() => onToggleStatus(file, disabledFile)}
+                            disabled={disabled || statusUpdating[file.name] === true}
+                            loading={statusUpdating[file.name] === true}
+                          >
+                            {disabledFile
+                              ? t('auth_files.batch_enable')
+                              : t('auth_files.batch_disable')}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                     <td className={styles.quotaResultCell}>{renderQuotaCell(file)}</td>
                     <td className={styles.quotaActionsCell}>
-                      {onToggleStatus && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => onToggleStatus(file, disabledFile)}
-                          disabled={disabled || statusUpdating[file.name] === true}
-                          loading={statusUpdating[file.name] === true}
-                        >
-                          {disabledFile
-                            ? t('auth_files.batch_enable')
-                            : t('auth_files.batch_disable')}
-                        </Button>
-                      )}
                       <Button
                         variant="secondary"
                         size="sm"
