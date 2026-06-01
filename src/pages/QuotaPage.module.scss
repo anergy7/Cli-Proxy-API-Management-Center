@@ -525,6 +525,8 @@
 
 .quotaCredentialCell {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -534,6 +536,14 @@
   font-weight: 600;
   line-height: 1.45;
   word-break: break-all;
+}
+
+.quotaCredentialMeta {
+  color: var(--text-tertiary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .quotaStatusBadge {

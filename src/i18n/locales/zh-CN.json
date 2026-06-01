@@ -1134,7 +1134,10 @@
     "table_credential": "凭据",
     "table_enabled": "启用状态",
     "table_quota": "额度",
-    "table_actions": "操作"
+    "table_actions": "操作",
+    "credential_number": "#{{id}}",
+    "credential_order": "订单 {{order}}",
+    "credential_created": "创建 {{time}}"
   },
   "system_info": {
     "title": "管理中心信息",

@@ -1134,7 +1134,10 @@
     "table_credential": "Credential",
     "table_enabled": "Enabled",
     "table_quota": "Quota",
-    "table_actions": "Actions"
+    "table_actions": "Actions",
+    "credential_number": "#{{id}}",
+    "credential_order": "Order {{order}}",
+    "credential_created": "Created {{time}}"
   },
   "system_info": {
     "title": "Management Center Info",

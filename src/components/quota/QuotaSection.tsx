@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useNotificationStore, useQuotaStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
+import { formatCreatedCompact, getAuthFileNumberID } from '@/features/authFiles/constants';
 import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
 import { QuotaProgressBar } from './QuotaCard';
 import type { QuotaRenderHelpers, QuotaStatusState } from './QuotaCard';
@@ -50,6 +51,11 @@ const resolveQuotaErrorMessage = (
   if (status === 404) return t('common.quota_update_required');
   if (status === 403) return t('common.quota_check_credential');
   return fallback;
+};
+
+const getOrderID = (file: AuthFileItem): string => {
+  const raw = file.order_id ?? file.orderId ?? file['order'];
+  return typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim() : '';
 };
 
 export function QuotaSection<TState extends QuotaStatusState, TData>({
@@ -101,14 +107,14 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     if (!wasLoading) return;
 
     pendingQuotaRefreshRef.current = false;
-    const targets = filteredFiles.filter((file) => !isDisabledAuthFile(file));
+    const targets = filteredFiles;
     if (targets.length === 0) return;
     loadQuota(targets, 'all', setLoading);
   }, [filteredFiles, loading, loadQuota, setLoading]);
 
   const refreshQuotaForFile = useCallback(
     async (file: AuthFileItem) => {
-      if (disabled || isDisabledAuthFile(file)) return;
+      if (disabled) return;
       if (quota[file.name]?.status === 'loading') return;
 
       setQuota((prev) => ({
@@ -217,6 +223,16 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               {filteredFiles.map((file) => {
                 const displayType = file.type || file.provider || config.type;
                 const disabledFile = isDisabledAuthFile(file);
+                const numberID = getAuthFileNumberID(file);
+                const orderID = getOrderID(file);
+                const createdLabel = formatCreatedCompact(file);
+                const metaItems = [
+                  numberID ? t('quota_management.credential_number', { id: numberID }) : '',
+                  orderID ? t('quota_management.credential_order', { order: orderID }) : '',
+                  createdLabel !== '-'
+                    ? t('quota_management.credential_created', { time: createdLabel })
+                    : '',
+                ].filter(Boolean);
                 return (
                   <tr key={file.name} className={disabledFile ? styles.quotaTableRowDisabled : ''}>
                     <td>
@@ -227,6 +243,11 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                     <td>
                       <div className={styles.quotaCredentialCell}>
                         <span className={styles.quotaCredentialName}>{file.name}</span>
+                        {metaItems.length > 0 && (
+                          <span className={styles.quotaCredentialMeta}>
+                            {metaItems.join(' · ')}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -262,9 +283,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                         variant="secondary"
                         size="sm"
                         onClick={() => void refreshQuotaForFile(file)}
-                        disabled={
-                          disabled || disabledFile || quota[file.name]?.status === 'loading'
-                        }
+                        disabled={disabled || quota[file.name]?.status === 'loading'}
                       >
                         {t('common.refresh')}
                       </Button>

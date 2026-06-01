@@ -1160,7 +1160,10 @@
     "table_credential": "憑證",
     "table_enabled": "啟用狀態",
     "table_quota": "配額",
-    "table_actions": "操作"
+    "table_actions": "操作",
+    "credential_number": "#{{id}}",
+    "credential_order": "訂單 {{order}}",
+    "credential_created": "建立 {{time}}"
   },
   "system_info": {
     "title": "管理中心資訊",
