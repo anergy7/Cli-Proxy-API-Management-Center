@@ -144,6 +144,19 @@ const getOrderID = (file: AuthFileItem): string => {
   return typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim() : '';
 };
 
+const getAccountName = (file: AuthFileItem): string => {
+  const raw =
+    file.email ??
+    file.account ??
+    file.username ??
+    file.user ??
+    file['account_email'] ??
+    file['accountEmail'];
+  if (typeof raw === 'string' && raw.trim()) return raw.trim();
+  const name = file.name.replace(/\.json$/i, '');
+  return name.replace(/^[^-]+-/, '');
+};
+
 const formatProxyHost = (proxyURL: string): string => {
   const raw = proxyURL.trim();
   if (!raw) return '';
@@ -511,6 +524,10 @@ export function AuthFilesPage() {
     [sorted]
   );
   const selectedNames = useMemo(() => Array.from(selectedFiles), [selectedFiles]);
+  const selectedExportFiles = useMemo(
+    () => files.filter((file) => selectedFiles.has(file.name)),
+    [files, selectedFiles]
+  );
   const selectedHasStatusUpdating = useMemo(
     () => selectedNames.some((name) => statusUpdating[name] === true),
     [selectedNames, statusUpdating]
@@ -539,6 +556,39 @@ export function AuthFilesPage() {
     },
     [showNotification, t]
   );
+
+  const buildSelectedCredentialsExport = useCallback(() => {
+    const rows = selectedExportFiles.map((file) => ({
+      account: getAccountName(file),
+      order_id: getOrderID(file),
+      credential: file.name,
+    }));
+    return JSON.stringify(rows, null, 2);
+  }, [selectedExportFiles]);
+
+  const copySelectedCredentialsExport = useCallback(async () => {
+    if (selectedExportFiles.length === 0) return;
+    await copyTextWithNotification(buildSelectedCredentialsExport());
+  }, [buildSelectedCredentialsExport, copyTextWithNotification, selectedExportFiles.length]);
+
+  const downloadSelectedCredentialsExport = useCallback(() => {
+    if (selectedExportFiles.length === 0 || typeof document === 'undefined') return;
+    const content = buildSelectedCredentialsExport();
+    const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = `auth-credentials-${timestamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showNotification(
+      t('auth_files.batch_export_download_success', { count: selectedExportFiles.length }),
+      'success'
+    );
+  }, [buildSelectedCredentialsExport, selectedExportFiles.length, showNotification, t]);
 
   const openExcludedEditor = useCallback(
     (provider?: string) => {
@@ -1167,6 +1217,13 @@ export function AuthFilesPage() {
                                     )}
                                   </span>
                                   <span>
+                                    10m{' '}
+                                    {formatRateLimitPair(
+                                      rateLimit?.rpm_10m_current,
+                                      rateLimit?.rpm_10m_limit
+                                    )}
+                                  </span>
+                                  <span>
                                     {t('auth_files.rate_hourly')}{' '}
                                     {formatRateLimitPair(
                                       rateLimit?.hourly_current,
@@ -1432,6 +1489,22 @@ export function AuthFilesPage() {
                     disabled={disableControls || selectedNames.length === 0}
                   >
                     {t('auth_files.batch_download')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void copySelectedCredentialsExport()}
+                    disabled={selectedExportFiles.length === 0}
+                  >
+                    {t('auth_files.batch_export_copy')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={downloadSelectedCredentialsExport}
+                    disabled={selectedExportFiles.length === 0}
+                  >
+                    {t('auth_files.batch_export_download')}
                   </Button>
                   <Button
                     size="sm"

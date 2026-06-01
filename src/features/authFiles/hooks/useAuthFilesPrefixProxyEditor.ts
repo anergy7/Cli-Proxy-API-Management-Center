@@ -27,6 +27,7 @@ export type PrefixProxyEditorField =
   | 'tpmLimit'
   | 'concurrencyLimit'
   | 'rpm30mLimit'
+  | 'rpm10mLimit'
   | 'rphLimit'
   | 'hourlyLimit'
   | 'websockets'
@@ -53,6 +54,7 @@ export type PrefixProxyEditorState = {
   tpmLimit: string;
   concurrencyLimit: string;
   rpm30mLimit: string;
+  rpm10mLimit: string;
   rphLimit: string;
   hourlyLimit: string;
   websockets: boolean;
@@ -134,7 +136,8 @@ const addRateLimitPatch = (
     | 'concurrency_limit'
     | 'rph_limit'
     | 'hourly_limit'
-    | 'rpm_30m_limit',
+    | 'rpm_30m_limit'
+    | 'rpm_10m_limit',
   text: string
 ) => {
   const originalLimit = parseRateLimitValue(original[key]);
@@ -303,6 +306,7 @@ const buildAuthFileFieldsPatch = (
   addRateLimitPatch(patch, original, 'tpm_limit', editor.tpmLimit);
   addRateLimitPatch(patch, original, 'concurrency_limit', editor.concurrencyLimit);
   addRateLimitPatch(patch, original, 'rpm_30m_limit', editor.rpm30mLimit);
+  addRateLimitPatch(patch, original, 'rpm_10m_limit', editor.rpm10mLimit);
   addRateLimitPatch(patch, original, 'rph_limit', editor.rphLimit);
   addRateLimitPatch(patch, original, 'hourly_limit', editor.hourlyLimit);
 
@@ -383,6 +387,7 @@ const buildPrefixProxyUpdatedText = (
       'tpm_limit',
       'concurrency_limit',
       'rpm_30m_limit',
+      'rpm_10m_limit',
       'rph_limit',
       'hourly_limit',
     ] as const
@@ -461,6 +466,7 @@ export function useAuthFilesPrefixProxyEditor(
       tpmLimit: '',
       concurrencyLimit: '',
       rpm30mLimit: '',
+      rpm10mLimit: '',
       rphLimit: '',
       hourlyLimit: '',
       websockets: false,
@@ -513,6 +519,7 @@ export function useAuthFilesPrefixProxyEditor(
       const tpmLimit = parseRateLimitValue(json.tpm_limit);
       const concurrencyLimit = parseRateLimitValue(json.concurrency_limit);
       const rpm30mLimit = parseRateLimitValue(json.rpm_30m_limit);
+      const rpm10mLimit = parseRateLimitValue(json.rpm_10m_limit);
       const rphLimit = parseRateLimitValue(json.rph_limit);
       const hourlyLimit = parseRateLimitValue(json.hourly_limit);
       const websockets = providerKey === 'codex' ? readCodexAuthFileWebsockets(json) : false;
@@ -544,6 +551,7 @@ export function useAuthFilesPrefixProxyEditor(
           concurrencyLimit:
             concurrencyLimit !== undefined && concurrencyLimit > 0 ? String(concurrencyLimit) : '',
           rpm30mLimit: rpm30mLimit !== undefined && rpm30mLimit > 0 ? String(rpm30mLimit) : '',
+          rpm10mLimit: rpm10mLimit !== undefined && rpm10mLimit > 0 ? String(rpm10mLimit) : '',
           rphLimit: rphLimit !== undefined && rphLimit > 0 ? String(rphLimit) : '',
           hourlyLimit: hourlyLimit !== undefined && hourlyLimit > 0 ? String(hourlyLimit) : '',
           websockets,
@@ -579,6 +587,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'tpmLimit') return { ...prev, tpmLimit: String(value) };
       if (field === 'concurrencyLimit') return { ...prev, concurrencyLimit: String(value) };
       if (field === 'rpm30mLimit') return { ...prev, rpm30mLimit: String(value) };
+      if (field === 'rpm10mLimit') return { ...prev, rpm10mLimit: String(value) };
       if (field === 'rphLimit') return { ...prev, rphLimit: String(value) };
       if (field === 'hourlyLimit') return { ...prev, hourlyLimit: String(value) };
       if (field === 'websockets') {

@@ -19,6 +19,7 @@ export type VisualConfigFieldPath =
   | 'rphLimitDefault'
   | 'hourlyLimitDefault'
   | 'rpm30mLimitDefault'
+  | 'rpm10mLimitDefault'
   | 'authAutoRefreshWorkers'
   | 'streaming.keepaliveSeconds'
   | 'streaming.bootstrapRetries'
@@ -105,6 +106,7 @@ export type VisualConfigValues = {
   rphLimitDefault: string;
   hourlyLimitDefault: string;
   rpm30mLimitDefault: string;
+  rpm10mLimitDefault: string;
   disableCooling: boolean;
   disableImageGeneration: DisableImageGenerationMode;
   authAutoRefreshWorkers: string;
@@ -172,6 +174,7 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   rphLimitDefault: '',
   hourlyLimitDefault: '',
   rpm30mLimitDefault: '',
+  rpm10mLimitDefault: '',
   disableCooling: false,
   disableImageGeneration: 'false',
   authAutoRefreshWorkers: '',

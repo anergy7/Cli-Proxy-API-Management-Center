@@ -175,6 +175,14 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                     onChange={(e) => onChange('rpm30mLimit', e.target.value)}
                   />
                   <Input
+                    label={t('auth_files.rpm_10m_limit_label')}
+                    value={editor.rpm10mLimit}
+                    placeholder="2"
+                    hint={t('auth_files.rate_limit_hint')}
+                    disabled={disableControls || editor.saving || !editor.json}
+                    onChange={(e) => onChange('rpm10mLimit', e.target.value)}
+                  />
+                  <Input
                     label={t('auth_files.rph_limit_label')}
                     value={editor.rphLimit}
                     placeholder="0"

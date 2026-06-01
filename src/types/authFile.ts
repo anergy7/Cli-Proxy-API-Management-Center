@@ -44,11 +44,13 @@ export interface AuthFileRateLimit {
   rph_limit?: number;
   hourly_limit?: number;
   rpm_30m_limit?: number;
+  rpm_10m_limit?: number;
   rpm_current?: number;
   tpm_current?: number;
   rph_current?: number;
   hourly_current?: number;
   rpm_30m_current?: number;
+  rpm_10m_current?: number;
   in_flight?: number;
 }
 

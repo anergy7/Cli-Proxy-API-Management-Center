@@ -191,6 +191,7 @@ export function getVisualConfigValidationErrors(
     rphLimitDefault: getNonNegativeIntegerError(values.rphLimitDefault),
     hourlyLimitDefault: getNonNegativeIntegerError(values.hourlyLimitDefault),
     rpm30mLimitDefault: getNonNegativeIntegerError(values.rpm30mLimitDefault),
+    rpm10mLimitDefault: getNonNegativeIntegerError(values.rpm10mLimitDefault),
     authAutoRefreshWorkers: getNonNegativeIntegerError(values.authAutoRefreshWorkers),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
@@ -856,6 +857,12 @@ function getNextDirtyFields(
       nextValues.rpm30mLimitDefault === baselineValues.rpm30mLimitDefault
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rpm10mLimitDefault')) {
+    updateDirty(
+      'rpm10mLimitDefault',
+      nextValues.rpm10mLimitDefault === baselineValues.rpm10mLimitDefault
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'wsAuth')) {
     updateDirty('wsAuth', nextValues.wsAuth === baselineValues.wsAuth);
   }
@@ -1079,6 +1086,7 @@ export function useVisualConfig() {
         rphLimitDefault: String(parsed['rph-limit-default'] ?? ''),
         hourlyLimitDefault: String(parsed['hourly-limit-default'] ?? ''),
         rpm30mLimitDefault: String(parsed['rpm-30m-limit-default'] ?? ''),
+        rpm10mLimitDefault: String(parsed['rpm-10m-limit-default'] ?? ''),
         disableCooling: Boolean(parsed['disable-cooling']),
         disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
         authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
@@ -1248,6 +1256,7 @@ export function useVisualConfig() {
         setIntFromStringInDoc(doc, ['rph-limit-default'], values.rphLimitDefault);
         setIntFromStringInDoc(doc, ['hourly-limit-default'], values.hourlyLimitDefault);
         setIntFromStringInDoc(doc, ['rpm-30m-limit-default'], values.rpm30mLimitDefault);
+        setIntFromStringInDoc(doc, ['rpm-10m-limit-default'], values.rpm10mLimitDefault);
         setBooleanInDoc(doc, ['disable-cooling'], values.disableCooling);
         setDisableImageGenerationInDoc(
           doc,

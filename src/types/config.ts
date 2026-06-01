@@ -24,6 +24,7 @@ export interface Config {
   rphLimitDefault?: number;
   hourlyLimitDefault?: number;
   rpm30mLimitDefault?: number;
+  rpm10mLimitDefault?: number;
   quotaExceeded?: QuotaExceededConfig;
   requestLog?: boolean;
   loggingToFile?: boolean;
@@ -54,6 +55,7 @@ export type RawConfigSection =
   | 'rph-limit-default'
   | 'hourly-limit-default'
   | 'rpm-30m-limit-default'
+  | 'rpm-10m-limit-default'
   | 'quota-exceeded'
   | 'request-log'
   | 'logging-to-file'

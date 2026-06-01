@@ -209,6 +209,7 @@ export function VisualConfigEditor({
   const rphLimitDefaultError = getValidationMessage(t, validationErrors?.rphLimitDefault);
   const hourlyLimitDefaultError = getValidationMessage(t, validationErrors?.hourlyLimitDefault);
   const rpm30mLimitDefaultError = getValidationMessage(t, validationErrors?.rpm30mLimitDefault);
+  const rpm10mLimitDefaultError = getValidationMessage(t, validationErrors?.rpm10mLimitDefault);
   const authAutoRefreshWorkersError = getValidationMessage(
     t,
     validationErrors?.authAutoRefreshWorkers
@@ -302,6 +303,7 @@ export function VisualConfigEditor({
           'rphLimitDefault',
           'hourlyLimitDefault',
           'rpm30mLimitDefault',
+          'rpm10mLimitDefault',
           'authAutoRefreshWorkers',
         ]),
       },
@@ -917,6 +919,16 @@ export function VisualConfigEditor({
                       error={rpm30mLimitDefaultError}
                     />
                     <Input
+                      label={t('config_management.visual.sections.network.rpm_10m_limit_default')}
+                      type="number"
+                      placeholder="2"
+                      value={values.rpm10mLimitDefault}
+                      onChange={(e) => onChange({ rpm10mLimitDefault: e.target.value })}
+                      disabled={disabled}
+                      hint={t('config_management.visual.sections.network.rate_limit_hint')}
+                      error={rpm10mLimitDefaultError}
+                    />
+                    <Input
                       label={t('config_management.visual.sections.network.rph_limit_default')}
                       type="number"
                       placeholder="0"
@@ -929,7 +941,7 @@ export function VisualConfigEditor({
                     <Input
                       label={t('config_management.visual.sections.network.hourly_limit_default')}
                       type="number"
-                      placeholder="15"
+                      placeholder="8"
                       value={values.hourlyLimitDefault}
                       onChange={(e) => onChange({ hourlyLimitDefault: e.target.value })}
                       disabled={disabled}

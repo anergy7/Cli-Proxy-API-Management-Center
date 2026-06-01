@@ -12,6 +12,7 @@ type LimitField =
   | 'rpm_limit'
   | 'tpm_limit'
   | 'rpm_30m_limit'
+  | 'rpm_10m_limit'
   | 'hourly_limit'
   | 'concurrency_limit';
 
@@ -48,6 +49,7 @@ export function AuthFileRateLimitEditorModal({
     rpm_limit: '',
     tpm_limit: '',
     rpm_30m_limit: '',
+    rpm_10m_limit: '',
     hourly_limit: '',
     concurrency_limit: '',
   });
@@ -60,6 +62,7 @@ export function AuthFileRateLimitEditorModal({
       rpm_limit: limitValue(rateLimit, 'rpm_limit'),
       tpm_limit: limitValue(rateLimit, 'tpm_limit'),
       rpm_30m_limit: limitValue(rateLimit, 'rpm_30m_limit'),
+      rpm_10m_limit: limitValue(rateLimit, 'rpm_10m_limit'),
       hourly_limit: limitValue(rateLimit, 'hourly_limit'),
       concurrency_limit: limitValue(rateLimit, 'concurrency_limit'),
     });
@@ -155,9 +158,17 @@ export function AuthFileRateLimitEditorModal({
             onChange={(event) => handleChange('rpm_30m_limit', event.target.value)}
           />
           <Input
+            label={t('auth_files.rpm_10m_limit_label')}
+            value={values.rpm_10m_limit}
+            placeholder="2"
+            hint={t('auth_files.rate_limit_hint')}
+            disabled={disabled || saving}
+            onChange={(event) => handleChange('rpm_10m_limit', event.target.value)}
+          />
+          <Input
             label={t('auth_files.hourly_limit_label')}
             value={values.hourly_limit}
-            placeholder="15"
+            placeholder="8"
             hint={t('auth_files.rate_limit_hint')}
             disabled={disabled || saving}
             onChange={(event) => handleChange('hourly_limit', event.target.value)}

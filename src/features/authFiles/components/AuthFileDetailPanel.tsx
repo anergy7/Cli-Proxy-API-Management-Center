@@ -130,6 +130,12 @@ export function AuthFileDetailPanel({
           limit: rateLimit.rpm_30m_limit,
         },
         {
+          key: 'rpm10m',
+          label: t('auth_files.rate_rpm_10m'),
+          current: rateLimit.rpm_10m_current,
+          limit: rateLimit.rpm_10m_limit,
+        },
+        {
           key: 'rph',
           label: t('auth_files.rate_rph'),
           current: rateLimit.rph_current,
