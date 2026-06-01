@@ -39,6 +39,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { ProviderStatusBar } from '@/components/providers/ProviderStatusBar';
 import { copyToClipboard } from '@/utils/clipboard';
 import { formatFileSize } from '@/utils/format';
+import { resolveAuthProvider } from '@/utils/quota';
 import {
   normalizeRecentRequestAuthIndex,
   normalizeRecentRequestBuckets,
@@ -48,6 +49,7 @@ import {
 import {
   MAX_CARD_PAGE_SIZE,
   MIN_CARD_PAGE_SIZE,
+  QUOTA_PROVIDER_TYPES,
   clampCardPageSize,
   formatCreated,
   formatCreatedCompact,
@@ -61,6 +63,7 @@ import {
   isRuntimeOnlyAuthFile,
   normalizeProviderKey,
   parsePriorityValue,
+  type QuotaProviderType,
   type ResolvedTheme,
 } from '@/features/authFiles/constants';
 import {
@@ -105,7 +108,7 @@ const DEFAULT_REGULAR_PAGE_SIZE = 20;
 const DEFAULT_COMPACT_PAGE_SIZE = 50;
 // Keep in sync with the number of <th> columns rendered in the auth-file table;
 // used as the colSpan for the expandable detail row.
-const AUTH_TABLE_COLUMN_COUNT = 14;
+const AUTH_TABLE_COLUMN_COUNT = 13;
 
 const HEALTH_TONE_CLASS: Record<HealthTone, string> = {
   neutral: styles.tableStateNeutral,
@@ -120,6 +123,12 @@ const buildWildcardSearch = (value: string): RegExp | null => {
   if (!value.includes('*')) return null;
   const pattern = value.split('*').map(escapeWildcardSearchSegment).join('.*');
   return new RegExp(pattern, 'i');
+};
+
+const resolveQuotaType = (file: AuthFileItem): QuotaProviderType | null => {
+  const provider = resolveAuthProvider(file);
+  if (!QUOTA_PROVIDER_TYPES.has(provider as QuotaProviderType)) return null;
+  return provider as QuotaProviderType;
 };
 
 const formatRateLimitPair = (current?: number, limit?: number, compact = false): string => {
@@ -998,7 +1007,6 @@ export function AuthFilesPage() {
                       <th>{t('auth_files.table_failure_reason')}</th>
                       <th>{t('auth_files.table_rate_limits')}</th>
                       <th>{t('auth_files.health_status_label')}</th>
-                      <th>{t('auth_files.file_created')}</th>
                       <th>{t('auth_files.file_modified')}</th>
                       <th>{t('auth_files.priority_display')}</th>
                       <th className={styles.authTableActionsCol}>
@@ -1053,6 +1061,7 @@ export function AuthFilesPage() {
                       const expanded = expandedRows.has(file.name);
                       const createdLabel = formatCreated(file);
                       const modifiedLabel = formatModified(file);
+                      const quotaType = resolveQuotaType(file);
 
                       return (
                         <Fragment key={file.name}>
@@ -1106,6 +1115,9 @@ export function AuthFilesPage() {
                             <td className={styles.tableCredentialCell}>
                               <span className={styles.tableFileName} title={file.name}>
                                 {file.name}
+                              </span>
+                              <span className={styles.tableFileCreated} title={createdLabel}>
+                                {t('auth_files.file_created')}: {formatCreatedCompact(file)}
                               </span>
                               <span className={styles.tableFileMeta}>
                                 {file.size ? formatFileSize(file.size) : '-'}
@@ -1267,9 +1279,6 @@ export function AuthFilesPage() {
                             <td className={styles.tableHealthCell}>
                               <ProviderStatusBar statusData={statusData} styles={styles} />
                             </td>
-                            <td className={styles.tableDateCell} title={createdLabel}>
-                              {formatCreatedCompact(file)}
-                            </td>
                             <td className={styles.tableDateCell} title={modifiedLabel}>
                               {formatModifiedCompact(file)}
                             </td>
@@ -1342,7 +1351,11 @@ export function AuthFilesPage() {
                           {expanded && (
                             <tr className={styles.authTableDetailRow}>
                               <td colSpan={AUTH_TABLE_COLUMN_COUNT}>
-                                <AuthFileDetailPanel file={file} />
+                                <AuthFileDetailPanel
+                                  file={file}
+                                  quotaType={quotaType}
+                                  disableControls={disableControls}
+                                />
                               </td>
                             </tr>
                           )}

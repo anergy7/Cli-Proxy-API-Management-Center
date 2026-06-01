@@ -30,6 +30,8 @@ interface QuotaSectionProps<TState extends QuotaStatusState, TData> {
   loading: boolean;
   disabled: boolean;
   enabledFilter: QuotaEnabledFilter;
+  statusUpdating?: Record<string, boolean>;
+  onToggleStatus?: (file: AuthFileItem, enabled: boolean) => void;
 }
 
 const getTypeLabel = (t: TFunction, type: string): string => {
@@ -56,6 +58,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   loading,
   disabled,
   enabledFilter,
+  statusUpdating = {},
+  onToggleStatus,
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const showNotification = useNotificationStore((state) => state.showNotification);
@@ -138,7 +142,9 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
-      {filteredFiles.length > 0 && <span className={styles.countBadge}>{filteredFiles.length}</span>}
+      {filteredFiles.length > 0 && (
+        <span className={styles.countBadge}>{filteredFiles.length}</span>
+      )}
     </div>
   );
 
@@ -236,11 +242,26 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                     </td>
                     <td className={styles.quotaResultCell}>{renderQuotaCell(file)}</td>
                     <td className={styles.quotaActionsCell}>
+                      {onToggleStatus && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onToggleStatus(file, disabledFile)}
+                          disabled={disabled || statusUpdating[file.name] === true}
+                          loading={statusUpdating[file.name] === true}
+                        >
+                          {disabledFile
+                            ? t('auth_files.batch_enable')
+                            : t('auth_files.batch_disable')}
+                        </Button>
+                      )}
                       <Button
                         variant="secondary"
                         size="sm"
                         onClick={() => void refreshQuotaForFile(file)}
-                        disabled={disabled || disabledFile || quota[file.name]?.status === 'loading'}
+                        disabled={
+                          disabled || disabledFile || quota[file.name]?.status === 'loading'
+                        }
                       >
                         {t('common.refresh')}
                       </Button>

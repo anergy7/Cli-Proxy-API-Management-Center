@@ -408,6 +408,7 @@
     "detail_quota": "配额冷却",
     "detail_usage_limit": "用量窗口",
     "detail_rate_limit": "速率限制",
+    "detail_cached_quota": "本地配额",
     "detail_warnings": "最近告警（{{count}}）",
     "detail_retryable": "可重试",
     "detail_not_retryable": "不可重试",

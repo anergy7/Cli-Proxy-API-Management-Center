@@ -408,6 +408,7 @@
     "detail_quota": "Quota cooldown",
     "detail_usage_limit": "Usage window",
     "detail_rate_limit": "Rate limits",
+    "detail_cached_quota": "Local quota",
     "detail_warnings": "Recent warnings ({{count}})",
     "detail_retryable": "Retryable",
     "detail_not_retryable": "Not retryable",

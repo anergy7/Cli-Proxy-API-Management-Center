@@ -15,10 +15,14 @@ import {
   getWarnings,
   hasRateLimitData,
 } from '@/features/authFiles/health';
+import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
+import type { QuotaProviderType } from '@/features/authFiles/constants';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFileDetailPanelProps = {
   file: AuthFileItem;
+  quotaType?: QuotaProviderType | null;
+  disableControls?: boolean;
 };
 
 type RateMetric = {
@@ -75,7 +79,11 @@ function RateUsageRow({ metric }: { metric: RateMetric }) {
   );
 }
 
-export function AuthFileDetailPanel({ file }: AuthFileDetailPanelProps) {
+export function AuthFileDetailPanel({
+  file,
+  quotaType = null,
+  disableControls = false,
+}: AuthFileDetailPanelProps) {
   const { t } = useTranslation();
   const [now, setNow] = useState(() => Date.now());
   // Keep recovery countdowns ticking while the panel is open.
@@ -91,8 +99,14 @@ export function AuthFileDetailPanel({ file }: AuthFileDetailPanelProps) {
   const showQuota = Boolean(quota && (quota.exceeded || quota.reason || recoverMs !== undefined));
   const showUsage = usageUntilMs !== undefined;
   const showRate = hasRateLimitData(rateLimit);
+  const showCachedQuota = Boolean(quotaType);
   const hasAnySection =
-    Boolean(lastError) || showQuota || showUsage || showRate || warnings.length > 0;
+    Boolean(lastError) ||
+    showQuota ||
+    showUsage ||
+    showRate ||
+    showCachedQuota ||
+    warnings.length > 0;
 
   const rateMetrics: RateMetric[] = rateLimit
     ? [
@@ -228,6 +242,20 @@ export function AuthFileDetailPanel({ file }: AuthFileDetailPanelProps) {
               <RateUsageRow key={metric.key} metric={metric} />
             ))}
           </div>
+        </section>
+      )}
+
+      {showCachedQuota && quotaType && (
+        <section className={styles.detailSection}>
+          <h4 className={styles.detailHeading}>
+            <IconChartLine size={15} />
+            {t('auth_files.detail_cached_quota')}
+          </h4>
+          <AuthFileQuotaSection
+            file={file}
+            quotaType={quotaType}
+            disableControls={disableControls}
+          />
         </section>
       )}
 

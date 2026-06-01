@@ -498,7 +498,7 @@
 
   th:nth-child(5),
   td:nth-child(5) {
-    width: 110px;
+    width: 178px;
   }
 
   @include mobile {
@@ -571,6 +571,9 @@
 }
 
 .quotaActionsCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   white-space: nowrap;
 }
 

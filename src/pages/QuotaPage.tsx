@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, useNotificationStore } from '@/stores';
 import { authFilesApi, configFileApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import {
@@ -26,11 +26,13 @@ const FILTERS: QuotaEnabledFilter[] = ['all', 'enabled', 'disabled'];
 export function QuotaPage() {
   const { t } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const showNotification = useNotificationStore((state) => state.showNotification);
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [enabledFilter, setEnabledFilter] = useState<QuotaEnabledFilter>('all');
+  const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
 
   const disableControls = connectionStatus !== 'connected';
 
@@ -60,6 +62,46 @@ export function QuotaPage() {
   const handleHeaderRefresh = useCallback(async () => {
     await Promise.all([loadConfig(), loadFiles()]);
   }, [loadConfig, loadFiles]);
+
+  const handleStatusToggle = useCallback(
+    async (file: AuthFileItem, enabled: boolean) => {
+      const name = file.name;
+      const nextDisabled = !enabled;
+      const previousDisabled = file.disabled === true;
+
+      setStatusUpdating((prev) => ({ ...prev, [name]: true }));
+      setFiles((prev) =>
+        prev.map((item) => (item.name === name ? { ...item, disabled: nextDisabled } : item))
+      );
+
+      try {
+        const res = await authFilesApi.setStatus(name, nextDisabled);
+        setFiles((prev) =>
+          prev.map((item) => (item.name === name ? { ...item, disabled: res.disabled } : item))
+        );
+        showNotification(
+          enabled
+            ? t('auth_files.status_enabled_success', { name })
+            : t('auth_files.status_disabled_success', { name }),
+          'success'
+        );
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : '';
+        setFiles((prev) =>
+          prev.map((item) => (item.name === name ? { ...item, disabled: previousDisabled } : item))
+        );
+        showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
+      } finally {
+        setStatusUpdating((prev) => {
+          if (!prev[name]) return prev;
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    },
+    [showNotification, t]
+  );
 
   useHeaderRefresh(handleHeaderRefresh);
 
@@ -98,6 +140,8 @@ export function QuotaPage() {
         loading={loading}
         disabled={disableControls}
         enabledFilter={enabledFilter}
+        statusUpdating={statusUpdating}
+        onToggleStatus={handleStatusToggle}
       />
       <QuotaSection
         config={ANTIGRAVITY_CONFIG}
@@ -105,6 +149,8 @@ export function QuotaPage() {
         loading={loading}
         disabled={disableControls}
         enabledFilter={enabledFilter}
+        statusUpdating={statusUpdating}
+        onToggleStatus={handleStatusToggle}
       />
       <QuotaSection
         config={CODEX_CONFIG}
@@ -112,6 +158,8 @@ export function QuotaPage() {
         loading={loading}
         disabled={disableControls}
         enabledFilter={enabledFilter}
+        statusUpdating={statusUpdating}
+        onToggleStatus={handleStatusToggle}
       />
       <QuotaSection
         config={XAI_CONFIG}
@@ -119,6 +167,8 @@ export function QuotaPage() {
         loading={loading}
         disabled={disableControls}
         enabledFilter={enabledFilter}
+        statusUpdating={statusUpdating}
+        onToggleStatus={handleStatusToggle}
       />
       <QuotaSection
         config={GEMINI_CLI_CONFIG}
@@ -126,6 +176,8 @@ export function QuotaPage() {
         loading={loading}
         disabled={disableControls}
         enabledFilter={enabledFilter}
+        statusUpdating={statusUpdating}
+        onToggleStatus={handleStatusToggle}
       />
       <QuotaSection
         config={KIMI_CONFIG}
@@ -133,6 +185,8 @@ export function QuotaPage() {
         loading={loading}
         disabled={disableControls}
         enabledFilter={enabledFilter}
+        statusUpdating={statusUpdating}
+        onToggleStatus={handleStatusToggle}
       />
     </div>
   );
