@@ -329,6 +329,7 @@
     "batch_delete_confirm": "Are you sure you want to delete {{count}} files?",
     "batch_selected": "{{count}} selected",
     "batch_select_all": "Select All",
+    "batch_select_one": "Select {{name}}",
     "batch_select_page": "Select page",
     "batch_select_filtered": "Select filtered",
     "batch_invert_page": "Invert page",

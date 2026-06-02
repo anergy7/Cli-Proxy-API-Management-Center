@@ -461,6 +461,23 @@
   overflow-x: auto;
 }
 
+.quotaSelectionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 820px;
+  padding: 0 0 10px;
+}
+
+.quotaSelectionActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .quotaTable {
   width: 100%;
   border-collapse: collapse;
@@ -488,7 +505,7 @@
 
   th:nth-child(1),
   td:nth-child(1) {
-    width: 72px;
+    width: 92px;
   }
 
   th:nth-child(2),
@@ -521,6 +538,10 @@
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+
+  label {
+    gap: 6px;
+  }
 }
 
 .quotaTypeBadge {

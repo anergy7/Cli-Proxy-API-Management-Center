@@ -9,9 +9,11 @@ import type { TFunction } from 'i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { SelectionCheckbox } from '@/components/ui/SelectionCheckbox';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useNotificationStore, useQuotaStore } from '@/stores';
 import type { AuthFileItem } from '@/types';
+import { copyToClipboard } from '@/utils/clipboard';
 import { formatCreatedCompact, getAuthFileNumberID } from '@/features/authFiles/constants';
 import { getStatusFromError, isDisabledAuthFile } from '@/utils/quota';
 import { QuotaProgressBar } from './QuotaCard';
@@ -58,6 +60,19 @@ const getOrderID = (file: AuthFileItem): string => {
   return typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim() : '';
 };
 
+const getAccountName = (file: AuthFileItem): string => {
+  const raw =
+    file.email ??
+    file.account ??
+    file.username ??
+    file.user ??
+    file['account_email'] ??
+    file['accountEmail'];
+  if (typeof raw === 'string' && raw.trim()) return raw.trim();
+  const name = file.name.replace(/\.json$/i, '');
+  return name.replace(/^[^-]+-/, '');
+};
+
 export function QuotaSection<TState extends QuotaStatusState, TData>({
   config,
   files,
@@ -74,6 +89,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   >;
   const { quota, loadQuota } = useQuotaLoader(config);
   const [sectionLoading, setSectionLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(() => new Set());
   const pendingQuotaRefreshRef = useRef(false);
   const prevFilesLoadingRef = useRef(loading);
 
@@ -88,6 +104,21 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         }),
     [files, config, enabledFilter]
   );
+
+  const selectedVisibleFiles = useMemo(
+    () => filteredFiles.filter((file) => selectedFiles.has(file.name)),
+    [filteredFiles, selectedFiles]
+  );
+  const allVisibleSelected =
+    filteredFiles.length > 0 && filteredFiles.every((file) => selectedFiles.has(file.name));
+
+  useEffect(() => {
+    const visibleNames = new Set(filteredFiles.map((file) => file.name));
+    setSelectedFiles((prev) => {
+      const next = new Set([...prev].filter((name) => visibleNames.has(name)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filteredFiles]);
 
   const setLoading = useCallback((isLoading: boolean) => {
     setSectionLoading(isLoading);
@@ -144,6 +175,49 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     },
     [config, disabled, quota, setQuota, showNotification, t]
   );
+
+  const toggleFileSelection = useCallback((name: string, checked: boolean) => {
+    setSelectedFiles((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(name);
+      } else {
+        next.delete(name);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleAllVisible = useCallback(
+    (checked: boolean) => {
+      setSelectedFiles((prev) => {
+        const next = new Set(prev);
+        filteredFiles.forEach((file) => {
+          if (checked) {
+            next.add(file.name);
+          } else {
+            next.delete(file.name);
+          }
+        });
+        return next;
+      });
+    },
+    [filteredFiles]
+  );
+
+  const copySelectedCredentials = useCallback(async () => {
+    if (selectedVisibleFiles.length === 0) return;
+    const text = selectedVisibleFiles
+      .map((file) => [getAccountName(file), getOrderID(file)].filter(Boolean).join('\t'))
+      .join('\n');
+    const copied = await copyToClipboard(text);
+    showNotification(
+      copied
+        ? t('notification.link_copied', { defaultValue: 'Copied to clipboard' })
+        : t('notification.copy_failed', { defaultValue: 'Copy failed' }),
+      copied ? 'success' : 'error'
+    );
+  }, [selectedVisibleFiles, showNotification, t]);
 
   const titleNode = (
     <div className={styles.titleWrapper}>
@@ -209,6 +283,33 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
         />
       ) : (
         <div className={styles.quotaTableWrap}>
+          <div className={styles.quotaSelectionBar}>
+            <SelectionCheckbox
+              checked={allVisibleSelected}
+              onChange={toggleAllVisible}
+              ariaLabel={t('auth_files.batch_select_filtered')}
+              label={t('auth_files.batch_selected', { count: selectedVisibleFiles.length })}
+              disabled={filteredFiles.length === 0}
+            />
+            <div className={styles.quotaSelectionActions}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void copySelectedCredentials()}
+                disabled={selectedVisibleFiles.length === 0}
+              >
+                {t('auth_files.batch_export_copy')}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedFiles(new Set())}
+                disabled={selectedVisibleFiles.length === 0}
+              >
+                {t('auth_files.batch_deselect')}
+              </Button>
+            </div>
+          </div>
           <table className={styles.quotaTable}>
             <thead>
               <tr>
@@ -236,7 +337,14 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 return (
                   <tr key={file.name} className={disabledFile ? styles.quotaTableRowDisabled : ''}>
                     <td className={styles.quotaNumberCell}>
-                      {numberID ? t('quota_management.credential_number', { id: numberID }) : '-'}
+                      <SelectionCheckbox
+                        checked={selectedFiles.has(file.name)}
+                        onChange={(checked) => toggleFileSelection(file.name, checked)}
+                        ariaLabel={t('auth_files.batch_select_one', { name: file.name })}
+                        label={
+                          numberID ? t('quota_management.credential_number', { id: numberID }) : '-'
+                        }
+                      />
                     </td>
                     <td>
                       <span className={styles.quotaTypeBadge}>
